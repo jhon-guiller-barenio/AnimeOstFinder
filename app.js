@@ -30,6 +30,7 @@ const searchInput = document.getElementById('searchInput');
 const suggestionsEl = document.getElementById('searchSuggestions');
 const dialog = document.getElementById('playerDialog');
 const themeToggle = document.getElementById('themeToggle');
+const miniPlayer = document.getElementById('miniPlayer');
 const albumArtCache = new Map();
 const albumArtQueue = [];
 const albumArtJobs = new Map();
@@ -195,7 +196,7 @@ function applyAlbumArt(cover, track, result) {
   };
   cover.classList.add('has-art');
   cover.prepend(image);
-  if (isPlayer) return;
+  if (isPlayer) { updateMiniArt(image); return; }
   if (result.storeUrl && result.provider === 'Apple Music') {
     const link = document.createElement('a');
     link.className = 'art-store-link';
@@ -299,7 +300,7 @@ function search(query) {
   if (!searchTerm) {loadCatalog();return;}
   loadCatalog(searchTerm,1);
 }
-function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks) {
+function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks, options = {}) {
   if (!track) return;
   playbackQueue = queue.length ? [...queue] : [track];
   if (!playbackQueue.some(item => String(item.id) === String(track.id))) playbackQueue.unshift(track);
@@ -307,15 +308,21 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
   grid.querySelectorAll('.track-card').forEach(card=>card.classList.toggle('is-playing',String(card.dataset.cardId)===String(track.id)));
   document.getElementById('playerTitle').textContent=track.title;
   document.getElementById('playerSubtitle').textContent=`${track.anime} · ${track.artist || 'Artist unavailable'}`;
+  document.getElementById('miniTitle').textContent=track.title;
+  document.getElementById('miniSubtitle').textContent=`${track.anime} · ${track.artist || 'Artist unavailable'}`;
   const playerArt = document.getElementById('playerArt');
   const artKey = `${track.title}|${track.artist || ''}|${track.anime || ''}`.toLowerCase();
   playerArt.dataset.artKey = artKey;
   playerArt.querySelector('.player-album-cover')?.remove();
   playerArt.classList.remove('has-art');
   playerArt.style.background=track.color || 'linear-gradient(145deg,#edc3d2,#96617e)';
+  document.getElementById('miniArt').style.background=playerArt.style.background;
+  document.getElementById('miniArt').innerHTML='<span>♪</span>';
   queueAlbumArt(playerArt, track, artKey);
-  document.getElementById('mediaMount').innerHTML='';
   const mount=document.getElementById('mediaMount');
+  mount.querySelectorAll('audio,video').forEach(media=>media.pause());
+  mount.innerHTML='';
+  miniPlayer.hidden=true;
   const mediaUrl=track.audioUrl || track.videoUrl;
   const sourceLink=document.getElementById('sourceLink');
   const downloadLink=document.getElementById('downloadTrack');
@@ -326,8 +333,10 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     const media=document.createElement(track.audioUrl ? 'audio' : 'video');
     media.controls=true; media.autoplay=true; media.src=mediaUrl;
     if (media.tagName==='VIDEO') {media.playsInline=true;media.style.width='100%';}
-    media.addEventListener('play',()=>dialog.classList.add('is-playing'));
-    media.addEventListener('pause',()=>dialog.classList.remove('is-playing'));
+    media.addEventListener('play',()=>{dialog.classList.add('is-playing');syncMiniPlayer();});
+    media.addEventListener('pause',()=>{dialog.classList.remove('is-playing');syncMiniPlayer();});
+    media.addEventListener('timeupdate',syncMiniPlayer);
+    media.addEventListener('durationchange',syncMiniPlayer);
     media.addEventListener('ended', () => changeTrack(1));
     mount.appendChild(media);
     sourceLink.href=mediaUrl;
@@ -344,7 +353,8 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     downloadLink.classList.add('hidden');
   }
   renderPlayerQueue();
-  if (!dialog.open) dialog.showModal();
+  if (options.keepMini && mediaUrl) showMiniPlayer();
+  else if (!dialog.open) dialog.showModal();
 }
 function renderPlayerQueue() {
   const list=document.getElementById('playerQueue');
@@ -363,7 +373,47 @@ function renderPlayerQueue() {
 function changeTrack(direction) {
   const index=playbackQueue.findIndex(track=>String(track.id)===String(playingId));
   const next=playbackQueue[index+direction];
-  if (next) openPlayer(next, playbackQueue);
+  if (next) openPlayer(next, playbackQueue, {keepMini:!dialog.open});
+}
+function formatTime(value) {
+  if (!Number.isFinite(value) || value<0) return '0:00';
+  const seconds=Math.floor(value);
+  return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
+}
+function activeMedia() { return document.getElementById('mediaMount').querySelector('audio,video'); }
+function updateMiniArt(image) {
+  const miniArt=document.getElementById('miniArt');
+  const current=image || document.getElementById('playerArt').querySelector('.player-album-cover');
+  if (!current) return;
+  const copy=current.cloneNode();
+  copy.removeAttribute('fetchpriority');
+  miniArt.replaceChildren(copy);
+}
+function syncMiniPlayer() {
+  const media=activeMedia();
+  if (!media) return;
+  const seek=document.getElementById('miniSeek');
+  const duration=Number.isFinite(media.duration) ? media.duration : 0;
+  seek.value=duration ? String(Math.round(media.currentTime/duration*1000)) : '0';
+  document.getElementById('miniCurrentTime').textContent=formatTime(media.currentTime);
+  document.getElementById('miniDuration').textContent=formatTime(duration);
+  const button=document.getElementById('miniPlayPause');
+  button.textContent=media.paused ? '▶' : 'Ⅱ';
+  button.setAttribute('aria-label',media.paused?'Play':'Pause');
+}
+function showMiniPlayer() {
+  if (!activeMedia() || !playingId) return;
+  miniPlayer.hidden=false;
+  updateMiniArt();
+  syncMiniPlayer();
+}
+function stopPlayer() {
+  const media=activeMedia();
+  if (media) { media.pause(); media.currentTime=0; media.remove(); }
+  playingId=null;
+  miniPlayer.hidden=true;
+  dialog.classList.remove('is-playing');
+  grid.querySelectorAll('.track-card').forEach(card=>card.classList.remove('is-playing'));
 }
 document.getElementById('searchForm').addEventListener('submit', e=>{e.preventDefault();submitCurrentSearch();});
 searchInput.addEventListener('input', updateSuggestions);
@@ -385,7 +435,27 @@ document.getElementById('loadMore').addEventListener('click',()=>loadCatalog(las
 document.getElementById('closePlayer').addEventListener('click',()=>dialog.close());
 document.getElementById('previousTrack').addEventListener('click',()=>changeTrack(-1));
 document.getElementById('nextTrack').addEventListener('click',()=>changeTrack(1));
+document.getElementById('miniPrevious').addEventListener('click',()=>changeTrack(-1));
+document.getElementById('miniNext').addEventListener('click',()=>changeTrack(1));
+document.getElementById('miniPlayPause').addEventListener('click',()=>{
+  const media=activeMedia();
+  if (!media) return;
+  if (media.paused) media.play().catch(()=>{}); else media.pause();
+  syncMiniPlayer();
+});
+document.getElementById('miniSeek').addEventListener('input',event=>{
+  const media=activeMedia();
+  if (media && Number.isFinite(media.duration)) media.currentTime=Number(event.target.value)/1000*media.duration;
+});
+document.getElementById('miniExpand').addEventListener('click',()=>{miniPlayer.hidden=true;if(!dialog.open)dialog.showModal();});
+document.getElementById('miniStop').addEventListener('click',stopPlayer);
+document.getElementById('scrollTop').addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+window.addEventListener('scroll',()=>{document.getElementById('scrollTop').hidden=window.scrollY<420;},{passive:true});
+document.getElementById('tipNav').addEventListener('click',()=>document.getElementById('tipDialog').showModal());
+document.getElementById('closeTip').addEventListener('click',()=>document.getElementById('tipDialog').close());
+document.getElementById('tipDialog').addEventListener('click',event=>{if(event.target.id==='tipDialog')event.currentTarget.close();});
+document.getElementById('tipSupportLink').addEventListener('click',event=>{if(event.currentTarget.getAttribute('aria-disabled')==='true')event.preventDefault();});
 dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
-dialog.addEventListener('close',()=>{dialog.classList.remove('is-playing');grid.querySelectorAll('.track-card').forEach(card=>card.classList.remove('is-playing'));document.getElementById('mediaMount').querySelectorAll('audio,video').forEach(m=>m.pause());});
+dialog.addEventListener('close',showMiniPlayer);
 render();
 loadCatalog();

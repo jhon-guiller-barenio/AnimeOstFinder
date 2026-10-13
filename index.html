@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=12" />
+  <link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
   <div class="zero-two-backdrop" aria-hidden="true"></div>
@@ -18,6 +18,7 @@
     <a class="brand" href="#top" aria-label="Sakura Sound home"><span class="brand-mark">花</span><span>Sakura<span class="brand-light">Sound</span></span></a>
     <nav class="main-nav" aria-label="Main navigation"><a class="active" href="#discover">Discover</a><a href="#tracks">Explore OSTs</a></nav>
     <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><span aria-hidden="true">☾</span></button>
+    <button class="tip-nav" id="tipNav" type="button">☕ <span>Tip me</span></button>
     <button class="saved-nav" id="savedNav"><span>♡</span> My collection <b id="savedCount">0</b></button>
   </header>
 
@@ -60,7 +61,17 @@
     <section class="bottom-banner"><span class="banner-flower">✿</span><div><span class="eyebrow">MADE FOR YOUR ANIME-WATCHING ERA</span><h2>Some songs just <em>feel like home.</em></h2></div><a href="#tracks">Find yours <span>→</span></a></section>
   </main>
   <footer><a class="brand" href="#top"><span class="brand-mark">花</span><span>Sakura<span class="brand-light">Sound</span></span></a><span>Made with a little <b>♥</b> and a lot of anime.</span><span>© 2026 Sakura Sound</span></footer>
+  <aside class="mini-player" id="miniPlayer" aria-label="Mini music player" hidden>
+    <div class="mini-art" id="miniArt"><span>♪</span></div>
+    <div class="mini-track"><strong id="miniTitle">Now playing</strong><small id="miniSubtitle">Anime soundtrack</small></div>
+    <div class="mini-controls"><button id="miniPrevious" type="button" aria-label="Previous track">⏮</button><button id="miniPlayPause" type="button" aria-label="Play">▶</button><button id="miniNext" type="button" aria-label="Next track">⏭</button></div>
+    <div class="mini-progress"><span id="miniCurrentTime">0:00</span><input id="miniSeek" type="range" min="0" max="1000" value="0" aria-label="Seek through track"><span id="miniDuration">0:00</span></div>
+    <button class="mini-expand" id="miniExpand" type="button" aria-label="Open full player" title="Open full player">↗</button>
+    <button class="mini-stop" id="miniStop" type="button" aria-label="Stop playback and close mini player" title="Stop playback">×</button>
+  </aside>
+  <button class="scroll-top" id="scrollTop" type="button" aria-label="Scroll to top" title="Back to top" hidden>↑</button>
   <dialog id="playerDialog" class="player-dialog"><button class="close-player" id="closePlayer" aria-label="Close player">×</button><div class="player-art" id="playerArt"><span>♪</span></div><div class="player-info"><div class="eyebrow">NOW PLAYING</div><h2 id="playerTitle">Song title</h2><p id="playerSubtitle">Anime title</p><div id="mediaMount"></div><div class="player-actions"><button id="previousTrack" type="button" aria-label="Previous track">⏮ <span>Previous</span></button><button id="nextTrack" type="button" aria-label="Next track">⏭ <span>Next</span></button><a id="downloadTrack" href="#" download>↓ <span>Download audio</span></a></div><a id="sourceLink" href="#" target="_blank" rel="noreferrer">Open original theme ↗</a><section class="player-queue" aria-label="Up next"><div class="queue-heading">UP NEXT</div><ol id="playerQueue"></ol></section></div></dialog>
-  <script src="app.js?v=12"></script>
+  <dialog id="tipDialog" class="tip-dialog"><button class="close-player" id="closeTip" aria-label="Close tip dialog">×</button><div class="tip-icon">☕</div><div class="eyebrow">SUPPORT THE PROJECT</div><h2>Keep the music playing</h2><p>If SakuraSound has helped you discover a favorite, you can support its creator with a small tip.</p><a id="tipSupportLink" class="tip-support-link" href="#" aria-disabled="true">Buy me a coffee <span>↗</span></a><small class="tip-setup-note">Buy Me a Coffee page link will be connected here.</small></dialog>
+  <script src="app.js?v=13"></script>
 </body>
 </html>

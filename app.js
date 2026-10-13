@@ -341,9 +341,9 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     mount.appendChild(media);
     sourceLink.href=mediaUrl;
     sourceLink.classList.remove('hidden');
-    downloadLink.href=mediaUrl;
-    downloadLink.target='_blank';
-    downloadLink.rel='noreferrer';
+    downloadLink.href=`/api/download?url=${encodeURIComponent(mediaUrl)}&filename=${encodeURIComponent(`${fileBase}.${extension}`)}`;
+    downloadLink.removeAttribute('target');
+    downloadLink.removeAttribute('rel');
     downloadLink.download=`${fileBase}.${extension}`;
     downloadLink.querySelector('span').textContent=track.audioUrl ? 'Download audio' : 'Download theme video';
     downloadLink.setAttribute('aria-label', `Download ${track.title} ${track.audioUrl ? 'audio' : 'video'} from the original provider`);

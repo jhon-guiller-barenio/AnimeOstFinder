@@ -21,6 +21,7 @@ let page = 1;
 let dataSource = 'Curated picks';
 let lastApiQuery = '';
 let playingId = null;
+let playbackQueue = [];
 const favorites = new Set(JSON.parse(localStorage.getItem('sakura-favorites') || '[]'));
 const grid = document.getElementById('trackGrid');
 const statusEl = document.getElementById('apiStatus');
@@ -28,6 +29,7 @@ const emptyEl = document.getElementById('emptyState');
 const searchInput = document.getElementById('searchInput');
 const suggestionsEl = document.getElementById('searchSuggestions');
 const dialog = document.getElementById('playerDialog');
+const themeToggle = document.getElementById('themeToggle');
 const albumArtCache = new Map();
 const albumArtQueue = [];
 const albumArtJobs = new Map();
@@ -36,6 +38,19 @@ let activeArtLookups = 0;
 let activeSuggestion = -1;
 let suggestionItems = [];
 let artObserver;
+
+function setTheme(theme) {
+  const isDark = theme === 'dark';
+  document.body.classList.toggle('dark-mode', isDark);
+  themeToggle.innerHTML = `<span aria-hidden="true">${isDark ? '☀' : '☾'}</span>`;
+  themeToggle.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} mode`);
+  themeToggle.title = `Switch to ${isDark ? 'light' : 'dark'} mode`;
+  document.querySelector('meta[name="theme-color"]').content = isDark ? '#17131b' : '#fff8fa';
+  localStorage.setItem('sakura-theme', theme);
+}
+
+setTheme(localStorage.getItem('sakura-theme') || 'light');
+themeToggle.addEventListener('click', () => setTheme(document.body.classList.contains('dark-mode') ? 'light' : 'dark'));
 
 function safeText(v='') { return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function getVisibleTracks() {
@@ -65,7 +80,7 @@ function render() {
     <div class="track-content"><div class="track-meta"><span>${safeText(t.type || 'opening')}</span><span>${t.year ? safeText(t.year) : 'ANIME OST'}</span></div><h3 class="track-title" title="${safeText(t.title)}">${safeText(t.title)}</h3><div class="track-anime" title="${safeText(t.anime)}">${safeText(t.anime)}</div><div class="track-bottom"><span class="artist">${safeText(t.artist || 'Artist information unavailable')}</span><span class="track-index">${String(i+1).padStart(2,'0')}</span></div></div>
   </article>`).join('');
   grid.querySelectorAll('[data-save]').forEach(b => b.addEventListener('click', () => toggleFavorite(b.dataset.save)));
-  grid.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', () => openPlayer(tracks.find(t => String(t.id) === b.dataset.play))));
+  grid.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', () => openPlayer(tracks.find(t => String(t.id) === b.dataset.play), getVisibleTracks())));
   observeAlbumArt();
   statusEl.querySelector('span:last-child').textContent = dataSource;
   statusEl.classList.toggle('live', dataSource === 'Live catalog');
@@ -267,8 +282,10 @@ function search(query) {
   if (!searchTerm) {loadCatalog();return;}
   loadCatalog(searchTerm,1);
 }
-function openPlayer(track) {
+function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks) {
   if (!track) return;
+  playbackQueue = queue.length ? [...queue] : [track];
+  if (!playbackQueue.some(item => String(item.id) === String(track.id))) playbackQueue.unshift(track);
   playingId=track.id;
   document.getElementById('playerTitle').textContent=track.title;
   document.getElementById('playerSubtitle').textContent=`${track.anime} · ${track.artist || 'Artist unavailable'}`;
@@ -282,17 +299,48 @@ function openPlayer(track) {
   document.getElementById('mediaMount').innerHTML='';
   const mount=document.getElementById('mediaMount');
   const mediaUrl=track.audioUrl || track.videoUrl;
+  const sourceLink=document.getElementById('sourceLink');
+  const downloadLink=document.getElementById('downloadTrack');
+  let extension='webm';
+  try { extension=new URL(mediaUrl).pathname.split('.').pop().split('/')[0] || extension; } catch (_) {}
+  const fileBase = `${track.artist || 'anime-ost'} - ${track.title || 'theme'}`.replace(/[\\/:*?"<>|]+/g, '').trim().replace(/\s+/g, '-').slice(0,100);
   if (mediaUrl) {
     const media=document.createElement(track.audioUrl ? 'audio' : 'video');
     media.controls=true; media.autoplay=true; media.src=mediaUrl;
     if (media.tagName==='VIDEO') {media.playsInline=true;media.style.width='100%';}
+    media.addEventListener('ended', () => changeTrack(1));
     mount.appendChild(media);
-    document.getElementById('sourceLink').href=mediaUrl;
-    document.getElementById('sourceLink').classList.remove('hidden');
+    sourceLink.href=mediaUrl;
+    sourceLink.classList.remove('hidden');
+    downloadLink.href=mediaUrl;
+    downloadLink.download=`${fileBase}.${extension}`;
+    downloadLink.setAttribute('aria-label', `Download ${track.title} from the original provider`);
+    downloadLink.classList.remove('hidden');
   } else {
-    document.getElementById('sourceLink').classList.add('hidden');
+    sourceLink.classList.add('hidden');
+    downloadLink.classList.add('hidden');
   }
+  renderPlayerQueue();
   if (!dialog.open) dialog.showModal();
+}
+function renderPlayerQueue() {
+  const list=document.getElementById('playerQueue');
+  const currentIndex=playbackQueue.findIndex(track=>String(track.id)===String(playingId));
+  const nextTracks=currentIndex<0 ? playbackQueue : playbackQueue.slice(currentIndex+1);
+  list.innerHTML=nextTracks.slice(0,5).map(track=>`<li><button type="button" data-queue-track="${safeText(track.id)}"><span>${safeText(track.title)}</span><small>${safeText(track.anime)}</small></button></li>`).join('');
+  if (!nextTracks.length) list.innerHTML='<li class="queue-empty">End of this list</li>';
+  list.querySelectorAll('[data-queue-track]').forEach(button=>button.addEventListener('click',()=>{
+    const selected=playbackQueue.find(track=>String(track.id)===button.dataset.queueTrack);
+    if (selected) openPlayer(selected, playbackQueue);
+  }));
+  const index=currentIndex;
+  document.getElementById('previousTrack').disabled=playbackQueue.length<2 || index<=0;
+  document.getElementById('nextTrack').disabled=playbackQueue.length<2 || index<0 || index>=playbackQueue.length-1;
+}
+function changeTrack(direction) {
+  const index=playbackQueue.findIndex(track=>String(track.id)===String(playingId));
+  const next=playbackQueue[index+direction];
+  if (next) openPlayer(next, playbackQueue);
 }
 document.getElementById('searchForm').addEventListener('submit', e=>{e.preventDefault();submitCurrentSearch();});
 searchInput.addEventListener('input', updateSuggestions);
@@ -312,6 +360,8 @@ document.getElementById('savedNav').addEventListener('click',()=>{activeFilter='
 document.getElementById('clearFilters').addEventListener('click',()=>{activeFilter='all';searchInput.value='';document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter==='all'));loadCatalog();});
 document.getElementById('loadMore').addEventListener('click',()=>loadCatalog(lastApiQuery,page+1));
 document.getElementById('closePlayer').addEventListener('click',()=>dialog.close());
+document.getElementById('previousTrack').addEventListener('click',()=>changeTrack(-1));
+document.getElementById('nextTrack').addEventListener('click',()=>changeTrack(1));
 dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
 dialog.addEventListener('close',()=>{document.getElementById('mediaMount').querySelectorAll('audio,video').forEach(m=>m.pause());});
 render();

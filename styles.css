@@ -5,3 +5,43 @@
 @media(max-width:650px){.search-suggestions{top:calc(100% + 6px)}.suggestion-option{padding:9px}.suggestion-copy strong{font-size:10px}}
 .art-store-link{position:absolute;z-index:4;left:10px;bottom:10px;border:1px solid #ffffffaa;border-radius:20px;padding:6px 9px;background:#fffefaee;color:#5f3c52;font-size:8px;font-weight:700;box-shadow:0 2px 10px #24152020}.art-store-link:hover{background:#fff;color:#bf6684;transform:translateY(-1px)}
 .player-art{position:relative;overflow:hidden}.player-art .player-album-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.player-art.has-art>span{opacity:0}
+
+/* Zero Two theme artwork and mode switch */
+.zero-two-backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.zero-two-backdrop::before{content:"";position:absolute;right:0;top:0;width:min(46vw,560px);height:100%;background-image:linear-gradient(90deg,rgba(255,250,251,.98) 0%,rgba(255,250,251,.68) 34%,rgba(255,250,251,.1) 100%),url('/assets/zero-two-light.png');background-position:center;background-size:cover;background-repeat:no-repeat;opacity:.42;mask-image:linear-gradient(to bottom,transparent 0%,#000 10%,#000 91%,transparent 100%)}
+.theme-toggle{width:38px;height:38px;display:grid;place-items:center;border:1px solid #f0d5e0;border-radius:50%;background:#fff9;color:#c95e86;cursor:pointer;box-shadow:0 0 16px #ec8eb629;transition:transform .2s,box-shadow .2s,border-color .2s}
+.theme-toggle:hover{transform:translateY(-2px);border-color:#e98dad;box-shadow:0 0 0 4px #ed90af1c,0 0 22px #eb7aa84d}
+.theme-toggle span{font-size:19px;line-height:1}
+.searchbar:focus-within{border-color:#e18aaa;box-shadow:0 0 0 4px #e88eaa22,0 8px 25px #723b580c}
+.saved-nav:hover{border-color:#e6aac0;box-shadow:0 0 16px #e17d9d25}
+.hero{background:linear-gradient(90deg,rgba(255,250,251,.97) 0%,rgba(255,250,251,.91) 42%,rgba(255,250,251,.55) 100%)}
+body.dark-mode{background:#17131c;color:#f8edf5;color-scheme:dark}
+body.dark-mode .zero-two-backdrop::before{background-image:linear-gradient(90deg,rgba(23,19,28,.97) 0%,rgba(23,19,28,.77) 37%,rgba(23,19,28,.24) 100%),url('/assets/zero-two-dark.png');opacity:.72}
+body.dark-mode .hero{background:linear-gradient(90deg,rgba(23,19,28,.98) 0%,rgba(23,19,28,.91) 44%,rgba(23,19,28,.68) 100%)}
+body.dark-mode .hero h1,body.dark-mode .main-nav,body.dark-mode .main-nav a,body.dark-mode .brand,body.dark-mode .brand-light,body.dark-mode .section-head h2,body.dark-mode .track-title,body.dark-mode .bottom-banner h2{color:#f8edf5}
+body.dark-mode .hero-copy>p,body.dark-mode .section-sub,body.dark-mode .track-anime,body.dark-mode .artist,body.dark-mode .empty-state,body.dark-mode footer,body.dark-mode footer .brand{color:#b9a9bc}
+body.dark-mode .eyebrow,body.dark-mode .hero h1 em,body.dark-mode .section-head h2 em,body.dark-mode .bottom-banner h2 em{color:#ff9fc8;text-shadow:0 0 18px #ff58a744}
+body.dark-mode .eyebrow-dot{background:#ff8dbb;box-shadow:0 0 0 4px #ff8dbb24,0 0 16px #ff5fae9c}
+body.dark-mode .brand-mark{background:#38233a;color:#ff9fc8;box-shadow:0 0 18px #f766b52e}
+body.dark-mode .saved-nav,body.dark-mode .theme-toggle,body.dark-mode .searchbar,body.dark-mode .search-suggestions,body.dark-mode .track-card,body.dark-mode .bottom-banner,body.dark-mode .player-dialog{background:#231d29;border-color:#49354b;color:#f7eaf3;box-shadow:0 10px 32px #08060c66,0 0 20px #e85d9d12}
+body.dark-mode .theme-toggle{color:#ffd27a;border-color:#7c5272;box-shadow:0 0 18px #ff79ba38}
+body.dark-mode .theme-toggle:hover{box-shadow:0 0 0 4px #ff8cc426,0 0 28px #ff65b77d}
+body.dark-mode .searchbar input,body.dark-mode .catalog-tools select{background:transparent;color:#f7eaf3}
+body.dark-mode .searchbar input::placeholder,body.dark-mode .sort-label,body.dark-mode .track-meta,body.dark-mode .api-status,body.dark-mode .track-index{color:#b9a6ba}
+body.dark-mode .filter{color:#c3b3c3}
+body.dark-mode .filter.active{color:#ff9fc8}
+body.dark-mode .track-bottom{border-color:#49394a}
+body.dark-mode .suggestion-option,body.dark-mode .suggestion-search-all{color:#f3e8f2}
+body.dark-mode .suggestion-option:hover,body.dark-mode .suggestion-option.selected,body.dark-mode .suggestion-search-all:hover{background:#38283c}
+body.dark-mode .suggestion-note{background:#432943;color:#ff9fc8;box-shadow:0 0 14px #ed6dbb2c}
+body.dark-mode .suggestion-copy small{color:#b9a9bb}
+body.dark-mode .suggestion-search-all{border-color:#49394a}
+body.dark-mode .player-info p{color:#b9a9bb}
+body.dark-mode .close-player{background:#322638;color:#f4deed}
+body.dark-mode .searchbar button,body.dark-mode .empty-state button{box-shadow:0 0 18px #ee6ca653}
+body.dark-mode footer b{color:#ff9fc8}
+body.dark-mode .zero-two-backdrop::before{filter:saturate(.85)}
+@media(max-width:650px){.zero-two-backdrop::before{width:70vw;opacity:.24;background-position:58% center}.theme-toggle{width:34px;height:34px;flex:0 0 auto}body.dark-mode .zero-two-backdrop::before{opacity:.5}}
+/* Neon playback controls and a compact listening queue. */
+.player-actions{display:flex;align-items:center;gap:8px;margin:12px 0 9px}.player-actions button,.player-actions a{min-height:36px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #f0d6e1;border-radius:9px;background:#fff7fa;color:#a64d73;padding:8px 11px;font-size:10px;font-weight:700;cursor:pointer;transition:box-shadow .2s,transform .2s,border-color .2s}.player-actions a{text-decoration:none}.player-actions button:hover:not(:disabled),.player-actions a:hover{border-color:#f073b5;box-shadow:0 0 12px #ff59ae60,0 0 28px #ff59ae26;transform:translateY(-1px)}.player-actions button:disabled{opacity:.42;cursor:not-allowed}.player-actions #downloadTrack{margin-left:auto;background:linear-gradient(135deg,#ff75b9,#bc5de9);border-color:transparent;color:#fff;box-shadow:0 0 15px #ed53b866}.player-queue{margin-top:17px;border-top:1px solid #f2e6ec;padding-top:13px}.queue-heading{font-size:8px;font-weight:800;letter-spacing:1.6px;color:#b2839a;margin-bottom:7px}.player-queue ol{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:140px;overflow:auto}.player-queue li button{width:100%;border:0;background:transparent;border-radius:7px;text-align:left;padding:7px 9px;display:grid;gap:3px;cursor:pointer;color:#4f3b4b}.player-queue li button:hover{background:#fff1f8;box-shadow:inset 0 0 0 1px #fa9cca50}.player-queue li button span{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.player-queue li button small,.queue-empty{font-size:8px;color:#a08d9a}.queue-empty{padding:8px 9px;list-style:none}body.dark-mode .player-dialog{background:#17131f;color:#faeaff;box-shadow:0 0 0 1px #ff75c733,0 20px 90px #08040dcc,0 0 36px #ec45b625}body.dark-mode .player-dialog::backdrop{background:#090610c9}body.dark-mode .close-player{background:#28182f;color:#ffd7f0}body.dark-mode .player-info p{color:#b9a8c3}body.dark-mode .player-actions button{background:#25182c;border-color:#6e3e72;color:#ffd4f1}body.dark-mode .player-actions button:hover:not(:disabled),body.dark-mode .player-queue li button:hover{background:#38203c;box-shadow:0 0 15px #ff57ba50}body.dark-mode .player-queue{border-color:#422b48}body.dark-mode .player-queue li button{color:#f6ddf3}body.dark-mode .player-queue li button small,body.dark-mode .queue-empty{color:#ae98b5}body.dark-mode .queue-heading{color:#f08acb}
+@media(max-width:650px){.player-dialog{max-height:calc(100dvh - 24px);overflow:auto}.player-actions{gap:6px}.player-actions button,.player-actions a{padding:8px;font-size:9px}.player-info #mediaMount:empty:after{padding:14px 0}}

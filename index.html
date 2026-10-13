@@ -25,11 +25,14 @@
         <div class="eyebrow"><span class="eyebrow-dot"></span> YOUR NEXT OPENING THEME IS HERE</div>
         <h1>Find the song<br>that <em>stays with you.</em></h1>
         <p>Search anime openings, discover new favorites, and keep every unforgettable theme in one place.</p>
-        <form class="searchbar" id="searchForm">
+        <div class="search-shell">
+        <form class="searchbar" id="searchForm" autocomplete="off">
           <span class="search-icon" aria-hidden="true">⌕</span>
           <input id="searchInput" type="search" placeholder="Search an anime, song, or artist..." autocomplete="off" aria-label="Search anime, song, or artist" />
           <button type="submit">Find a song <span>→</span></button>
         </form>
+        <div class="search-suggestions" id="searchSuggestions" role="listbox" aria-label="Search suggestions" hidden></div>
+        </div>
         <div class="popular"><span>TRY SEARCHING</span><button data-query="Demon Slayer">Demon Slayer</button><button data-query="Jujutsu Kaisen">Jujutsu Kaisen</button><button data-query="Spy x Family">Spy x Family</button></div>
       </div>
       <div class="hero-art" aria-label="Decorative album collage">
@@ -50,7 +53,7 @@
       <div class="filter-row"><div class="filter-tabs" role="tablist" aria-label="Filter songs"><button class="filter active" data-filter="all">All songs <span id="allCount">—</span></button><button class="filter" data-filter="opening">Openings</button><button class="filter" data-filter="ending">Endings</button><button class="filter" data-filter="favorites">♡ Favorites</button></div><div class="api-status" id="apiStatus"><span class="status-dot"></span><span>Curated picks</span></div></div>
       <div class="track-grid" id="trackGrid" aria-live="polite"></div>
       <div class="empty-state" id="emptyState" hidden><div class="empty-icon">♫</div><h3>No songs found yet</h3><p>Try a different title, or clear your filters to explore all tracks.</p><button id="clearFilters">Show all songs</button></div>
-      <div class="load-row"><button class="load-more" id="loadMore">Load more songs <span>↓</span></button><span class="catalog-note">Song data by <a href="https://animethemes.moe" target="_blank" rel="noreferrer">AnimeThemes</a></span></div>
+      <div class="load-row"><button class="load-more" id="loadMore">Load more songs <span>↓</span></button><span class="catalog-note">Themes <a href="https://animethemes.moe" target="_blank" rel="noreferrer">AnimeThemes</a> · covers <a href="https://coverartarchive.org" target="_blank" rel="noreferrer">Cover Art Archive</a></span></div>
     </section>
     <section class="bottom-banner"><span class="banner-flower">✿</span><div><span class="eyebrow">MADE FOR YOUR ANIME-WATCHING ERA</span><h2>Some songs just <em>feel like home.</em></h2></div><a href="#tracks">Find yours <span>→</span></a></section>
   </main>

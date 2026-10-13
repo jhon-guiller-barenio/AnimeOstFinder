@@ -26,7 +26,14 @@ const grid = document.getElementById('trackGrid');
 const statusEl = document.getElementById('apiStatus');
 const emptyEl = document.getElementById('emptyState');
 const searchInput = document.getElementById('searchInput');
+const suggestionsEl = document.getElementById('searchSuggestions');
 const dialog = document.getElementById('playerDialog');
+const albumArtCache = new Map();
+const albumArtQueue = [];
+let albumArtBusy = false;
+let activeSuggestion = -1;
+let suggestionItems = [];
+let artObserver;
 
 function safeText(v='') { return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function getVisibleTracks() {
@@ -46,7 +53,7 @@ function render() {
   document.getElementById('savedCount').textContent = favorites.size;
   emptyEl.hidden = visible.length > 0;
   grid.innerHTML = visible.map((t,i) => `<article class="track-card">
-    <div class="cover" style="--cover:${t.color || 'linear-gradient(145deg,#efc2d2,#9b6683)'}">
+    <div class="cover" data-track-id="${safeText(t.id)}" style="--cover:${t.color || 'linear-gradient(145deg,#efc2d2,#9b6683)'}">
       <span class="cover-label">SAKURA SOUND · ${safeText(String(t.year || 'ANIME'))}</span>
       <span class="cover-glyph">${safeText(t.glyph || '♪')}</span>
       <span class="cover-type">${safeText(t.type || 'opening')} ${t.sequence ? String(t.sequence).padStart(2,'0') : ''}</span>
@@ -57,8 +64,137 @@ function render() {
   </article>`).join('');
   grid.querySelectorAll('[data-save]').forEach(b => b.addEventListener('click', () => toggleFavorite(b.dataset.save)));
   grid.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', () => openPlayer(tracks.find(t => String(t.id) === b.dataset.play))));
+  observeAlbumArt();
   statusEl.querySelector('span:last-child').textContent = dataSource;
   statusEl.classList.toggle('live', dataSource === 'Live catalog');
+}
+
+function observeAlbumArt() {
+  if (artObserver) artObserver.disconnect();
+  const covers = [...grid.querySelectorAll('.cover[data-track-id]')];
+  const observe = cover => {
+    const track = tracks.find(item => String(item.id) === cover.dataset.trackId);
+    if (!track || !track.title) return;
+    const key = `${track.title}|${track.artist || ''}|${track.anime || ''}`.toLowerCase();
+    if (albumArtCache.has(key)) return applyAlbumArt(cover, track, albumArtCache.get(key));
+    if (artObserver) artObserver.observe(cover);
+    else queueAlbumArt(cover, track, key);
+  };
+  artObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      artObserver.unobserve(entry.target);
+      const track = tracks.find(item => String(item.id) === entry.target.dataset.trackId);
+      if (track) queueAlbumArt(entry.target, track, `${track.title}|${track.artist || ''}|${track.anime || ''}`.toLowerCase());
+    });
+  }, {rootMargin:'160px 0px'}) : null;
+  covers.forEach(observe);
+}
+
+function queueAlbumArt(cover, track, key) {
+  const cached = albumArtCache.get(key);
+  if (cached) return applyAlbumArt(cover, track, cached);
+  if (cached === null) return;
+  const saved = localStorage.getItem(`sakura-art:${key}`);
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (Date.now() - data.savedAt < (data.found ? 30 : 1) * 86400000) {
+        albumArtCache.set(key, data.result);
+        return applyAlbumArt(cover, track, data.result);
+      }
+    } catch (_) { localStorage.removeItem(`sakura-art:${key}`); }
+  }
+  const existing = albumArtQueue.find(job => job.key === key);
+  if (existing) existing.targets.push({cover, track});
+  else albumArtQueue.push({key, track, targets:[{cover,track}]});
+  processAlbumArtQueue();
+}
+
+async function processAlbumArtQueue() {
+  if (albumArtBusy) return;
+  albumArtBusy = true;
+  while (albumArtQueue.length) {
+    const job = albumArtQueue.shift();
+    let result = null;
+    try {
+      const artist = job.track.artist && job.track.artist !== 'Artist information unavailable' ? job.track.artist : '';
+      const params = new URLSearchParams({title:job.track.title, artist, anime:job.track.anime || ''});
+      const response = await fetch(`/api/album-art?${params}`);
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload.imageUrl) result = payload;
+      }
+    } catch (_) { /* Keep the illustrated fallback when the art provider is unavailable. */ }
+    albumArtCache.set(job.key, result);
+    try { localStorage.setItem(`sakura-art:${job.key}`, JSON.stringify({result,found:!!result,savedAt:Date.now()})); } catch (_) {}
+    job.targets.forEach(({cover,track}) => applyAlbumArt(cover,track,result));
+    if (albumArtQueue.length) await new Promise(resolve => setTimeout(resolve, 1100));
+  }
+  albumArtBusy = false;
+}
+
+function applyAlbumArt(cover, track, result) {
+  if (!result?.imageUrl || !cover.isConnected || cover.querySelector('.album-cover')) return;
+  const image = document.createElement('img');
+  image.className = 'album-cover';
+  image.alt = `${track.title} album artwork`;
+  image.loading = 'lazy';
+  image.src = result.imageUrl;
+  image.title = `Album art: ${result.releaseTitle || 'OST release'} · ${result.provider || 'Cover Art Archive'}`;
+  image.onerror = () => image.remove();
+  cover.classList.add('has-art');
+  cover.prepend(image);
+  if (result.storeUrl && result.provider === 'Apple Music') {
+    const link = document.createElement('a');
+    link.className = 'art-store-link';
+    link.href = result.storeUrl;
+    link.target = '_blank';
+    link.rel = 'noreferrer';
+    link.textContent = 'Listen on Apple Music ↗';
+    link.setAttribute('aria-label', `Open ${result.releaseTitle || track.title} on Apple Music`);
+    cover.appendChild(link);
+  }
+}
+
+function updateSuggestions() {
+  const query = searchInput.value.trim().toLowerCase();
+  activeSuggestion = -1;
+  if (!query) { suggestionsEl.hidden = true; return; }
+  const all = [...tracks, ...sampleTracks].filter((track,index,array) => array.findIndex(item => item.title === track.title && item.anime === track.anime) === index);
+  suggestionItems = all.filter(track => `${track.title} ${track.anime} ${track.artist}`.toLowerCase().includes(query)).slice(0,5);
+  const options = suggestionItems.map((track,index) => `<button class="suggestion-option" type="button" role="option" aria-selected="false" data-suggestion="${index}"><span class="suggestion-note">♫</span><span class="suggestion-copy"><strong>${safeText(track.title)}</strong><small>${safeText(track.anime)} · ${safeText(track.artist)}</small></span><span class="suggestion-kind">${safeText(track.type || 'opening')}</span></button>`).join('');
+  const searchAll = `<button class="suggestion-search-all" type="button" data-search-all>Search the catalog for “${safeText(searchInput.value.trim())}” <span>→</span></button>`;
+  suggestionsEl.innerHTML = `${options}${searchAll}`;
+  suggestionsEl.hidden = false;
+  suggestionsEl.querySelectorAll('[data-suggestion]').forEach(button => button.addEventListener('click', () => selectSuggestion(Number(button.dataset.suggestion))));
+  suggestionsEl.querySelector('[data-search-all]')?.addEventListener('click', submitCurrentSearch);
+}
+
+function selectSuggestion(index) {
+  const track = suggestionItems[index];
+  if (!track) return;
+  searchInput.value = track.anime;
+  suggestionsEl.hidden = true;
+  search(track.anime);
+  document.getElementById('tracks').scrollIntoView({behavior:'smooth'});
+}
+
+function submitCurrentSearch() {
+  suggestionsEl.hidden = true;
+  search(searchInput.value);
+  document.getElementById('tracks').scrollIntoView({behavior:'smooth'});
+}
+
+function moveSuggestion(direction) {
+  const buttons = [...suggestionsEl.querySelectorAll('[data-suggestion]')];
+  if (!buttons.length) return;
+  activeSuggestion = (activeSuggestion + direction + buttons.length) % buttons.length;
+  buttons.forEach((button,index) => {
+    const selected = index === activeSuggestion;
+    button.classList.toggle('selected',selected);
+    button.setAttribute('aria-selected',String(selected));
+  });
 }
 function toggleFavorite(id) {
   id=String(id); favorites.has(id) ? favorites.delete(id) : favorites.add(id);
@@ -107,6 +243,7 @@ async function loadCatalog(query='', nextPage=1) {
   } finally { statusEl.classList.remove('loading'); }
 }
 function search(query) {
+  suggestionsEl.hidden = true;
   searchTerm=query.trim();
   if (!searchTerm) {loadCatalog();return;}
   loadCatalog(searchTerm,1);
@@ -132,7 +269,17 @@ function openPlayer(track) {
   }
   if (!dialog.open) dialog.showModal();
 }
-document.getElementById('searchForm').addEventListener('submit', e=>{e.preventDefault();search(searchInput.value);document.getElementById('tracks').scrollIntoView({behavior:'smooth'});});
+document.getElementById('searchForm').addEventListener('submit', e=>{e.preventDefault();submitCurrentSearch();});
+searchInput.addEventListener('input', updateSuggestions);
+searchInput.addEventListener('focus', updateSuggestions);
+searchInput.addEventListener('keydown', e=>{
+  if (suggestionsEl.hidden) return;
+  if (e.key==='ArrowDown') {e.preventDefault();moveSuggestion(1);}
+  else if (e.key==='ArrowUp') {e.preventDefault();moveSuggestion(-1);}
+  else if (e.key==='Escape') suggestionsEl.hidden=true;
+  else if (e.key==='Enter' && activeSuggestion>=0) {e.preventDefault();selectSuggestion(activeSuggestion);}
+});
+document.addEventListener('click', e=>{if (!e.target.closest('.search-shell')) suggestionsEl.hidden=true;});
 document.querySelectorAll('.popular button').forEach(b=>b.addEventListener('click',()=>{searchInput.value=b.dataset.query;search(b.dataset.query);document.getElementById('tracks').scrollIntoView({behavior:'smooth'});}));
 document.querySelectorAll('.filter').forEach(b=>b.addEventListener('click',()=>{document.querySelector('.filter.active')?.classList.remove('active');b.classList.add('active');activeFilter=b.dataset.filter;render();}));
 document.getElementById('sortSelect').addEventListener('change',render);

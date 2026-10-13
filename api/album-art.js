@@ -151,7 +151,9 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-    const artwork = await getAppleArtwork(title, artist, anime) || await getDeezerArtwork(title, artist, anime);
+    const providerLookups = [getAppleArtwork(title, artist, anime), getDeezerArtwork(title, artist, anime)]
+      .map(lookup => lookup.then(result => result || Promise.reject(new Error('No matching cover'))));
+    const artwork = await Promise.any(providerLookups).catch(() => null);
     if (artwork) return res.status(200).json(artwork);
 
     if (!artist) {

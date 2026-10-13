@@ -30,7 +30,8 @@ const suggestionsEl = document.getElementById('searchSuggestions');
 const dialog = document.getElementById('playerDialog');
 const albumArtCache = new Map();
 const albumArtQueue = [];
-let albumArtBusy = false;
+const MAX_ART_LOOKUPS = 4;
+let activeArtLookups = 0;
 let activeSuggestion = -1;
 let suggestionItems = [];
 let artObserver;
@@ -95,7 +96,7 @@ function queueAlbumArt(cover, track, key) {
   const cached = albumArtCache.get(key);
   if (cached) return applyAlbumArt(cover, track, cached);
   if (cached === null) return;
-  const saved = localStorage.getItem(`sakura-art:v3:${key}`);
+  const saved = localStorage.getItem(`sakura-art:v4:${key}`);
   if (saved) {
     try {
       const data = JSON.parse(saved);
@@ -103,7 +104,7 @@ function queueAlbumArt(cover, track, key) {
         albumArtCache.set(key, data.result);
         return applyAlbumArt(cover, track, data.result);
       }
-    } catch (_) { localStorage.removeItem(`sakura-art:v3:${key}`); }
+    } catch (_) { localStorage.removeItem(`sakura-art:v4:${key}`); }
   }
   const existing = albumArtQueue.find(job => job.key === key);
   if (existing) existing.targets.push({cover, track});
@@ -111,27 +112,31 @@ function queueAlbumArt(cover, track, key) {
   processAlbumArtQueue();
 }
 
-async function processAlbumArtQueue() {
-  if (albumArtBusy) return;
-  albumArtBusy = true;
-  while (albumArtQueue.length) {
+function processAlbumArtQueue() {
+  while (activeArtLookups < MAX_ART_LOOKUPS && albumArtQueue.length) {
     const job = albumArtQueue.shift();
-    let result = null;
-    try {
-      const artist = job.track.artist && job.track.artist !== 'Artist information unavailable' ? job.track.artist : '';
-      const params = new URLSearchParams({title:job.track.title, artist, anime:job.track.anime || '', v:'3'});
-      const response = await fetch(`/api/album-art?${params}`);
-      if (response.ok) {
-        const payload = await response.json();
-        if (payload.imageUrl) result = payload;
-      }
-    } catch (_) { /* Keep the illustrated fallback when the art provider is unavailable. */ }
-    albumArtCache.set(job.key, result);
-    try { localStorage.setItem(`sakura-art:v3:${job.key}`, JSON.stringify({result,found:!!result,savedAt:Date.now()})); } catch (_) {}
-    job.targets.forEach(({cover,track}) => applyAlbumArt(cover,track,result));
-    if (albumArtQueue.length) await new Promise(resolve => setTimeout(resolve, 1100));
+    activeArtLookups++;
+    loadAlbumArt(job).finally(() => {
+      activeArtLookups--;
+      processAlbumArtQueue();
+    });
   }
-  albumArtBusy = false;
+}
+
+async function loadAlbumArt(job) {
+  let result = null;
+  try {
+    const artist = job.track.artist && job.track.artist !== 'Artist information unavailable' ? job.track.artist : '';
+    const params = new URLSearchParams({title:job.track.title, artist, anime:job.track.anime || '', v:'4'});
+    const response = await fetch(`/api/album-art?${params}`);
+    if (response.ok) {
+      const payload = await response.json();
+      if (payload.imageUrl) result = payload;
+    }
+  } catch (_) { /* Keep the illustrated fallback when the art provider is unavailable. */ }
+  albumArtCache.set(job.key, result);
+  try { localStorage.setItem(`sakura-art:v4:${job.key}`, JSON.stringify({result,found:!!result,savedAt:Date.now()})); } catch (_) {}
+  job.targets.forEach(({cover,track}) => applyAlbumArt(cover,track,result));
 }
 
 function applyAlbumArt(cover, track, result) {

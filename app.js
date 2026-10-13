@@ -95,15 +95,15 @@ function queueAlbumArt(cover, track, key) {
   const cached = albumArtCache.get(key);
   if (cached) return applyAlbumArt(cover, track, cached);
   if (cached === null) return;
-  const saved = localStorage.getItem(`sakura-art:${key}`);
+  const saved = localStorage.getItem(`sakura-art:v3:${key}`);
   if (saved) {
     try {
       const data = JSON.parse(saved);
-      if (Date.now() - data.savedAt < (data.found ? 30 : 1) * 86400000) {
+      if (Date.now() - data.savedAt < (data.found ? 30 : 0.01) * 86400000) {
         albumArtCache.set(key, data.result);
         return applyAlbumArt(cover, track, data.result);
       }
-    } catch (_) { localStorage.removeItem(`sakura-art:${key}`); }
+    } catch (_) { localStorage.removeItem(`sakura-art:v3:${key}`); }
   }
   const existing = albumArtQueue.find(job => job.key === key);
   if (existing) existing.targets.push({cover, track});
@@ -119,7 +119,7 @@ async function processAlbumArtQueue() {
     let result = null;
     try {
       const artist = job.track.artist && job.track.artist !== 'Artist information unavailable' ? job.track.artist : '';
-      const params = new URLSearchParams({title:job.track.title, artist, anime:job.track.anime || ''});
+      const params = new URLSearchParams({title:job.track.title, artist, anime:job.track.anime || '', v:'3'});
       const response = await fetch(`/api/album-art?${params}`);
       if (response.ok) {
         const payload = await response.json();
@@ -127,7 +127,7 @@ async function processAlbumArtQueue() {
       }
     } catch (_) { /* Keep the illustrated fallback when the art provider is unavailable. */ }
     albumArtCache.set(job.key, result);
-    try { localStorage.setItem(`sakura-art:${job.key}`, JSON.stringify({result,found:!!result,savedAt:Date.now()})); } catch (_) {}
+    try { localStorage.setItem(`sakura-art:v3:${job.key}`, JSON.stringify({result,found:!!result,savedAt:Date.now()})); } catch (_) {}
     job.targets.forEach(({cover,track}) => applyAlbumArt(cover,track,result));
     if (albumArtQueue.length) await new Promise(resolve => setTimeout(resolve, 1100));
   }
@@ -142,7 +142,10 @@ function applyAlbumArt(cover, track, result) {
   image.loading = 'lazy';
   image.src = result.imageUrl;
   image.title = `Album art: ${result.releaseTitle || 'OST release'} · ${result.provider || 'Cover Art Archive'}`;
-  image.onerror = () => image.remove();
+  image.onerror = () => {
+    image.remove();
+    cover.classList.remove('has-art');
+  };
   cover.classList.add('has-art');
   cover.prepend(image);
   if (result.storeUrl && result.provider === 'Apple Music') {

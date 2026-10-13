@@ -1,6 +1,7 @@
 const MUSICBRAINZ = 'https://musicbrainz.org/ws/2';
 const COVER_ART_ARCHIVE = 'https://coverartarchive.org';
 const ITUNES = 'https://itunes.apple.com/search';
+const DEEZER = 'https://api.deezer.com/search/track';
 
 function escapeLucenePhrase(value) {
   return `"${String(value).replace(/[+\-!(){}\[\]^"~*?:\\/]/g, '\\$&')}"`;
@@ -50,36 +51,41 @@ function normalizeStoreText(value) {
 
 async function getAppleArtwork(title, artist, anime) {
   const queryTerms = [
-    [title, artist, anime].filter(Boolean).join(' '),
-    [title, anime].filter(Boolean).join(' ')
+    [artist, title].filter(Boolean).join(' '),
+    [title, anime].filter(Boolean).join(' '),
+    title
   ].filter((term, index, values) => term && values.indexOf(term) === index);
 
   for (const country of ['JP', 'US']) {
-    for (const term of queryTerms) {
+    const responses = await Promise.all(queryTerms.map(async term => {
       const url = new URL(ITUNES);
       url.searchParams.set('term', term);
       url.searchParams.set('country', country);
       url.searchParams.set('media', 'music');
       url.searchParams.set('entity', 'song');
-      url.searchParams.set('limit', '15');
-      const response = await fetch(url);
-      if (!response.ok) continue;
-      const data = await response.json();
+      url.searchParams.set('limit', '30');
+      try {
+        const response = await fetch(url);
+        return response.ok ? await response.json() : {results:[]};
+      } catch (_) { return {results:[]}; }
+    }));
       const requestedTitle = normalizeStoreText(title);
       const requestedArtist = normalizeStoreText(artist);
-      const exactMatches = (data.results || []).filter(item =>
-        item.trackName && item.artworkUrl100 && normalizeStoreText(item.trackName) === requestedTitle
-      );
-      exactMatches.sort((a,b) => {
-        const aArtist = normalizeStoreText(a.artistName);
-        const bArtist = normalizeStoreText(b.artistName);
-        const aScore = requestedArtist && aArtist.includes(requestedArtist) ? 2 : 0;
-        const bScore = requestedArtist && bArtist.includes(requestedArtist) ? 2 : 0;
-        const aAlbum = normalizeStoreText(a.collectionName).includes(normalizeStoreText(anime)) ? 1 : 0;
-        const bAlbum = normalizeStoreText(b.collectionName).includes(normalizeStoreText(anime)) ? 1 : 0;
-        return (bScore + bAlbum) - (aScore + aAlbum);
-      });
-      const match = exactMatches[0];
+      const animeName = normalizeStoreText(anime);
+      const matches = responses.flatMap(data => data.results || []).filter(item => item.artworkUrl100 && item.trackName)
+        .map(item => {
+          const trackName = normalizeStoreText(item.trackName);
+          const storeArtist = normalizeStoreText(item.artistName);
+          const albumName = normalizeStoreText(item.collectionName);
+          const titleExact = trackName === requestedTitle;
+          const titleClose = trackName.startsWith(requestedTitle) || requestedTitle.startsWith(trackName);
+          const artistMatch = !requestedArtist || storeArtist.includes(requestedArtist) || requestedArtist.includes(storeArtist);
+          const albumMatch = animeName && albumName.includes(animeName);
+          return {item, score: (titleExact ? 8 : titleClose ? 3 : 0) + (artistMatch ? 5 : -8) + (albumMatch ? 2 : 0)};
+        })
+        .filter(match => match.score >= (requestedArtist ? 5 : 8))
+        .sort((a,b) => b.score - a.score);
+      const match = matches[0]?.item;
       if (!match) continue;
       const imageUrl = match.artworkUrl100.replace(/\d+x\d+bb\./, '600x600bb.').replace(/^http:/i, 'https:');
       return {
@@ -88,9 +94,46 @@ async function getAppleArtwork(title, artist, anime) {
         storeUrl: match.trackViewUrl || match.collectionViewUrl || 'https://music.apple.com/',
         provider: 'Apple Music'
       };
-    }
   }
   return null;
+}
+
+async function getDeezerArtwork(title, artist, anime) {
+  const terms = [
+    [artist, title].filter(Boolean).join(' '),
+    title
+  ].filter((term, index, values) => term && values.indexOf(term) === index);
+  const requestedTitle = normalizeStoreText(title);
+  const requestedArtist = normalizeStoreText(artist);
+  const animeName = normalizeStoreText(anime);
+  const responses = await Promise.all(terms.map(async term => {
+    const url = new URL(DEEZER);
+    url.searchParams.set('q', term);
+    url.searchParams.set('limit', '25');
+    try {
+      const response = await fetch(url);
+      return response.ok ? await response.json() : {data:[]};
+    } catch (_) { return {data:[]}; }
+  }));
+  const matches = responses.flatMap(data => data.data || []).filter(item => item.title && (item.album?.cover_xl || item.album?.cover_big))
+      .map(item => {
+        const trackTitle = normalizeStoreText(item.title);
+        const trackArtist = normalizeStoreText(item.artist?.name);
+        const albumTitle = normalizeStoreText(item.album?.title);
+        const exact = trackTitle === requestedTitle;
+        const close = trackTitle.startsWith(requestedTitle) || requestedTitle.startsWith(trackTitle);
+        const artistMatch = !requestedArtist || trackArtist.includes(requestedArtist) || requestedArtist.includes(trackArtist);
+        return {item, score: (exact ? 8 : close ? 3 : 0) + (artistMatch ? 5 : -8) + (animeName && albumTitle.includes(animeName) ? 2 : 0)};
+      })
+      .filter(match => match.score >= (requestedArtist ? 5 : 8))
+      .sort((a,b) => b.score - a.score);
+  const match = matches[0]?.item;
+  return match ? {
+    imageUrl: match.album.cover_xl || match.album.cover_big,
+    releaseTitle: match.album.title || match.title,
+    storeUrl: match.link || match.album.link || 'https://www.deezer.com/',
+    provider: 'Deezer'
+  } : null;
 }
 
 module.exports = async function handler(req, res) {
@@ -108,8 +151,8 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-    const appleArtwork = await getAppleArtwork(title, artist, anime);
-    if (appleArtwork) return res.status(200).json(appleArtwork);
+    const artwork = await getAppleArtwork(title, artist, anime) || await getDeezerArtwork(title, artist, anime);
+    if (artwork) return res.status(200).json(artwork);
 
     if (!artist) {
       res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=86400');

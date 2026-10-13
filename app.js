@@ -316,7 +316,8 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     downloadLink.target='_blank';
     downloadLink.rel='noreferrer';
     downloadLink.download=`${fileBase}.${extension}`;
-    downloadLink.setAttribute('aria-label', `Download ${track.title} from the original provider`);
+    downloadLink.querySelector('span').textContent=track.audioUrl ? 'Download audio' : 'Download theme video';
+    downloadLink.setAttribute('aria-label', `Download ${track.title} ${track.audioUrl ? 'audio' : 'video'} from the original provider`);
     downloadLink.classList.remove('hidden');
   } else {
     sourceLink.classList.add('hidden');

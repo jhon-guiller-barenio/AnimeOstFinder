@@ -15,15 +15,6 @@ function isAllowedMediaUrl(value) {
   }
 }
 
-function isAudioMediaUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname === 'a.animethemes.moe' && !url.username && !url.password;
-  } catch (_) {
-    return false;
-  }
-}
-
 function safeFilename(value) {
   const cleaned = String(value || 'anime-theme.webm')
     .normalize('NFKD')
@@ -52,10 +43,6 @@ module.exports = async function handler(req, res) {
   if (!isAllowedMediaUrl(mediaUrl)) {
     return res.status(400).json({error: 'Only direct AnimeThemes media downloads are supported.'});
   }
-  if (format === 'mp3' && !isAudioMediaUrl(mediaUrl)) {
-    return res.status(400).json({error: 'MP3 downloads are available only for audio tracks.'});
-  }
-
   try {
     let target = mediaUrl;
     let upstream;
@@ -80,17 +67,12 @@ module.exports = async function handler(req, res) {
 
     const suppliedType = (upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
     if (format === 'mp3') {
-      if (suppliedType.startsWith('video/')) {
-        await upstream.body.cancel();
-        return res.status(400).json({error: 'The provider did not return an audio track.'});
-      }
-
       res.setHeader('Content-Type', 'audio/mpeg');
       res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/["\\]/g, '')}"`);
       res.setHeader('Cache-Control', 'private, no-store');
       res.setHeader('X-Content-Type-Options', 'nosniff');
 
-      // Preserve MP3 files as-is; transcode other supported audio sources on the fly.
+      // Preserve MP3 files as-is; extract or transcode audio and video themes on the fly.
       if (suppliedType === 'audio/mpeg' || new URL(target).pathname.toLowerCase().endsWith('.mp3')) {
         await pipeline(Readable.fromWeb(upstream.body), res);
         return;

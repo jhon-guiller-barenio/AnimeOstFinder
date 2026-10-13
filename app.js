@@ -326,6 +326,7 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
   const mediaUrl=track.audioUrl || track.videoUrl;
   const sourceLink=document.getElementById('sourceLink');
   const downloadLink=document.getElementById('downloadTrack');
+  const downloadMp3Link=document.getElementById('downloadMp3Track');
   let extension='webm';
   try { extension=new URL(mediaUrl).pathname.split('.').pop().split('/')[0] || extension; } catch (_) {}
   const fileBase = `${track.artist || 'anime-ost'} - ${track.title || 'theme'}`.replace(/[\\/:*?"<>|]+/g, '').trim().replace(/\s+/g, '-').slice(0,100);
@@ -348,9 +349,18 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     downloadLink.querySelector('span').textContent=track.audioUrl ? 'Download audio' : 'Download theme video';
     downloadLink.setAttribute('aria-label', `Download ${track.title} ${track.audioUrl ? 'audio' : 'video'} from the original provider`);
     downloadLink.classList.remove('hidden');
+    if (track.audioUrl) {
+      downloadMp3Link.href=`/api/download?url=${encodeURIComponent(track.audioUrl)}&filename=${encodeURIComponent(`${fileBase}.mp3`)}&format=mp3`;
+      downloadMp3Link.download=`${fileBase}.mp3`;
+      downloadMp3Link.setAttribute('aria-label', `Download ${track.title} as MP3`);
+      downloadMp3Link.classList.remove('hidden');
+    } else {
+      downloadMp3Link.classList.add('hidden');
+    }
   } else {
     sourceLink.classList.add('hidden');
     downloadLink.classList.add('hidden');
+    downloadMp3Link.classList.add('hidden');
   }
   renderPlayerQueue();
   if (options.keepMini && mediaUrl) showMiniPlayer();

@@ -30,7 +30,8 @@ Discover anime opening and ending themes, find their album artwork, and listen i
 - **Full player controls:** Play or pause, skip to the previous or next track in the current queue, view the source theme, and download the available media.
 - **Up Next queue:** See upcoming tracks and select one to start it.
 - **Sticky mini-player:** Keep playback controls visible while scrolling. The mini-player includes album art, track details, play/pause, previous/next, a seek bar, and elapsed/total time.
-- **One-click downloads:** Download an available audio file or theme video directly. The Vercel download route streams supported files from AnimeThemes and starts the file download without an extra confirmation page.
+- **One-click downloads:** Download an available original audio file or theme video directly from the player.
+- **MP3 download option:** Convert available audio tracks to a 192 kbps MP3 as they download. This option appears for tracks with an audio source; video-only themes keep the original video download.
 - **Playback-aware controls:** Previous and next buttons disable at the ends of the current queue.
 
 ### Make it yours
@@ -47,14 +48,16 @@ Discover anime opening and ending themes, find their album artwork, and listen i
 
 - The browser requests anime metadata and available theme media from AnimeThemes.
 - Album artwork is looked up through the Vercel `/api/album-art` function and its music catalog providers.
+- MP3 downloads are transcoded on the Vercel Node.js function with `ffmpeg-static`; files stream to the browser during conversion.
 - Downloads go through the Vercel `/api/download` function, which accepts only supported AnimeThemes media hosts.
 - Favorites, theme preference, and artwork results are stored in the visitor's browser. No account or database is needed.
 
 ## Run locally
 
-Use the Vercel CLI to run the site and its API routes:
+Install the project dependency, then start the site and API routes with the Vercel CLI:
 
 ```bash
+npm install
 npx vercel dev
 ```
 
@@ -73,7 +76,7 @@ This is a static site with serverless functions in `api/`. No build command, dat
 - Anime theme metadata and playable media: [AnimeThemes](https://animethemes.moe/)
 - Album artwork and music listings: Apple Music / iTunes, Deezer, MusicBrainz, and Cover Art Archive
 - `GET /api/album-art` searches providers for a likely album cover and listing.
-- `GET /api/download` streams an eligible AnimeThemes media file as a download.
+- `GET /api/download` streams the original AnimeThemes audio/video, or accepts `format=mp3` to convert an audio track to MP3 using the bundled `ffmpeg-static` binary.
 
 Set `MUSICBRAINZ_CONTACT` in Vercel to a project contact URL or email if you want the album-art API to use it in its User-Agent.
 

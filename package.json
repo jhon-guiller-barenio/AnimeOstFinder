@@ -1,0 +1,8 @@
+{
+  "name": "sakura-sound",
+  "private": true,
+  "description": "SakuraSound anime theme finder and music player",
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0"
+  }
+}

@@ -67,3 +67,4 @@ body.dark-mode .zero-two-backdrop::before{filter:saturate(.85)}
 .tip-nav .tip-symbol{display:inline-block;margin-right:4px;font-size:13px}.tip-nav .tip-label{display:inline}@media(max-width:420px){.tip-nav .tip-symbol{margin:0}.tip-nav .tip-label{display:none}}
 .mini-player:not([hidden])~.scroll-top{bottom:108px}
 @media(max-width:760px){.mini-player:not([hidden])~.scroll-top{bottom:104px}}
+.player-actions #downloadMp3Track{background:linear-gradient(135deg,#8a5fa6,#b55caa);border-color:transparent;color:#fff;box-shadow:0 0 12px #b55caa40}

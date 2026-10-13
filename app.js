@@ -313,6 +313,8 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     sourceLink.href=mediaUrl;
     sourceLink.classList.remove('hidden');
     downloadLink.href=mediaUrl;
+    downloadLink.target='_blank';
+    downloadLink.rel='noreferrer';
     downloadLink.download=`${fileBase}.${extension}`;
     downloadLink.setAttribute('aria-label', `Download ${track.title} from the original provider`);
     downloadLink.classList.remove('hidden');

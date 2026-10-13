@@ -38,6 +38,7 @@ let activeArtLookups = 0;
 let activeSuggestion = -1;
 let suggestionItems = [];
 let artObserver;
+let revealObserver;
 
 function setTheme(theme) {
   const isDark = theme === 'dark';
@@ -69,7 +70,7 @@ function render() {
   document.getElementById('allCount').textContent = tracks.length;
   document.getElementById('savedCount').textContent = favorites.size;
   emptyEl.hidden = visible.length > 0;
-  grid.innerHTML = visible.map((t,i) => `<article class="track-card">
+  grid.innerHTML = visible.map((t,i) => `<article class="track-card" data-card-id="${safeText(t.id)}" style="--card-delay:${Math.min(i,8)*45}ms">
     <div class="cover" data-track-id="${safeText(t.id)}" style="--cover:${t.color || 'linear-gradient(145deg,#efc2d2,#9b6683)'}">
       <span class="cover-label">SAKURA SOUND · ${safeText(String(t.year || 'ANIME'))}</span>
       <span class="cover-glyph">${safeText(t.glyph || '♪')}</span>
@@ -81,9 +82,25 @@ function render() {
   </article>`).join('');
   grid.querySelectorAll('[data-save]').forEach(b => b.addEventListener('click', () => toggleFavorite(b.dataset.save)));
   grid.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', () => openPlayer(tracks.find(t => String(t.id) === b.dataset.play), getVisibleTracks())));
+  revealTrackCards();
   observeAlbumArt();
   statusEl.querySelector('span:last-child').textContent = dataSource;
   statusEl.classList.toggle('live', dataSource === 'Live catalog');
+}
+
+function revealTrackCards() {
+  if (revealObserver) revealObserver.disconnect();
+  const cards=[...grid.querySelectorAll('.track-card')];
+  if (!('IntersectionObserver' in window)) {
+    cards.forEach(card=>card.classList.add('is-visible'));
+    return;
+  }
+  revealObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+    if (!entry.isIntersecting) return;
+    entry.target.classList.add('is-visible');
+    revealObserver.unobserve(entry.target);
+  }),{rootMargin:'0px 0px -30px 0px',threshold:.08});
+  cards.forEach(card=>revealObserver.observe(card));
 }
 
 function observeAlbumArt() {
@@ -287,6 +304,7 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
   playbackQueue = queue.length ? [...queue] : [track];
   if (!playbackQueue.some(item => String(item.id) === String(track.id))) playbackQueue.unshift(track);
   playingId=track.id;
+  grid.querySelectorAll('.track-card').forEach(card=>card.classList.toggle('is-playing',String(card.dataset.cardId)===String(track.id)));
   document.getElementById('playerTitle').textContent=track.title;
   document.getElementById('playerSubtitle').textContent=`${track.anime} · ${track.artist || 'Artist unavailable'}`;
   const playerArt = document.getElementById('playerArt');
@@ -308,6 +326,8 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     const media=document.createElement(track.audioUrl ? 'audio' : 'video');
     media.controls=true; media.autoplay=true; media.src=mediaUrl;
     if (media.tagName==='VIDEO') {media.playsInline=true;media.style.width='100%';}
+    media.addEventListener('play',()=>dialog.classList.add('is-playing'));
+    media.addEventListener('pause',()=>dialog.classList.remove('is-playing'));
     media.addEventListener('ended', () => changeTrack(1));
     mount.appendChild(media);
     sourceLink.href=mediaUrl;
@@ -366,6 +386,6 @@ document.getElementById('closePlayer').addEventListener('click',()=>dialog.close
 document.getElementById('previousTrack').addEventListener('click',()=>changeTrack(-1));
 document.getElementById('nextTrack').addEventListener('click',()=>changeTrack(1));
 dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
-dialog.addEventListener('close',()=>{document.getElementById('mediaMount').querySelectorAll('audio,video').forEach(m=>m.pause());});
+dialog.addEventListener('close',()=>{dialog.classList.remove('is-playing');grid.querySelectorAll('.track-card').forEach(card=>card.classList.remove('is-playing'));document.getElementById('mediaMount').querySelectorAll('audio,video').forEach(m=>m.pause());});
 render();
 loadCatalog();

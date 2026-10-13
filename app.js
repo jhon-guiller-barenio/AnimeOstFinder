@@ -349,8 +349,9 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     downloadLink.querySelector('span').textContent=track.audioUrl ? 'Download audio' : 'Download theme video';
     downloadLink.setAttribute('aria-label', `Download ${track.title} ${track.audioUrl ? 'audio' : 'video'} from the original provider`);
     downloadLink.classList.remove('hidden');
-    if (track.audioUrl) {
-      downloadMp3Link.href=`/api/download?url=${encodeURIComponent(track.audioUrl)}&filename=${encodeURIComponent(`${fileBase}.mp3`)}&format=mp3`;
+    const mp3Source = track.audioUrl || track.videoUrl;
+    if (mp3Source) {
+      downloadMp3Link.href=`/api/download?url=${encodeURIComponent(mp3Source)}&filename=${encodeURIComponent(`${fileBase}.mp3`)}&format=mp3`;
       downloadMp3Link.download=`${fileBase}.mp3`;
       downloadMp3Link.setAttribute('aria-label', `Download ${track.title} as MP3`);
       downloadMp3Link.classList.remove('hidden');

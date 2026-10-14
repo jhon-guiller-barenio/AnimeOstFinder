@@ -74,15 +74,9 @@
         throw new Error('Authentication is not configured yet. Add the Clerk publishable and secret keys to Vercel Production, then redeploy.');
       }
 
-      const encodedDomain = config.publishableKey.split('_')[2];
-      if (!encodedDomain) throw new Error('The Clerk publishable key is invalid.');
-      const base64 = encodedDomain.replace(/-/g, '+').replace(/_/g, '/');
-      const domain = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')).replace(/\$$/, '');
-      if (!/^[a-z\d.-]+$/i.test(domain)) throw new Error('The Clerk frontend domain is invalid.');
-
-      const frontend = 'https://' + domain;
-      await loadScript(frontend + '/npm/@clerk/ui@1/dist/ui.browser.js');
-      await loadScript(frontend + '/npm/@clerk/clerk-js@6/dist/clerk.browser.js', {
+      const proxyBase = config.proxyUrl.replace(/\/+$/, '');
+      await loadScript(proxyBase + '/npm/@clerk/ui@1/dist/ui.browser.js');
+      await loadScript(proxyBase + '/npm/@clerk/clerk-js@6/dist/clerk.browser.js', {
         'data-clerk-publishable-key': config.publishableKey,
         'data-clerk-proxy-url': config.proxyUrl
       });

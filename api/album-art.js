@@ -60,14 +60,14 @@ async function getAppleArtwork(title, artist, anime) {
     url.searchParams.set('limit', '30');
     try {
       const response = await fetch(url);
-      return response.ok ? await response.json() : {results:[]};
-    } catch (_) { return {results:[]}; }
+      return {country, data:response.ok ? await response.json() : {results:[]}};
+    } catch (_) { return {country, data:{results:[]}}; }
   }));
   const requestedTitle = normalizeStoreText(title);
   const requestedArtist = normalizeStoreText(artist);
   const animeName = normalizeStoreText(anime);
-  const matches = responses.flatMap(data => data.results || []).filter(item => item.artworkUrl100 && item.trackName)
-    .map(item => {
+  const matches = responses.flatMap(({country,data}) => (data.results || []).map(item => ({item,country}))).filter(({item}) => item.artworkUrl100 && item.trackName)
+    .map(({item,country}) => {
       const trackName = normalizeStoreText(item.trackName);
       const storeArtist = normalizeStoreText(item.artistName);
       const albumName = normalizeStoreText(item.collectionName);
@@ -75,18 +75,20 @@ async function getAppleArtwork(title, artist, anime) {
       const titleClose = trackName.startsWith(requestedTitle) || requestedTitle.startsWith(trackName);
       const artistMatch = !requestedArtist || storeArtist.includes(requestedArtist) || requestedArtist.includes(storeArtist);
       const albumMatch = animeName && albumName.includes(animeName);
-      return {item, score: (titleExact ? 8 : titleClose ? 3 : 0) + (artistMatch ? 5 : -8) + (albumMatch ? 2 : 0)};
+      return {item, country, score: (titleExact ? 8 : titleClose ? 3 : 0) + (artistMatch ? 5 : -8) + (albumMatch ? 2 : 0)};
     })
     .filter(match => match.score >= (requestedArtist ? 5 : 8))
     .sort((a,b) => b.score - a.score);
-  const match = matches[0]?.item;
+  const match = matches[0];
   if (!match) return null;
-  const imageUrl = match.artworkUrl100.replace(/\d+x\d+bb\./, '600x600bb.').replace(/^http:/i, 'https:');
+  const imageUrl = match.item.artworkUrl100.replace(/\d+x\d+bb\./, '600x600bb.').replace(/^http:/i, 'https:');
   return {
     imageUrl,
-    releaseTitle: match.collectionName || match.trackName,
-    storeUrl: match.trackViewUrl || match.collectionViewUrl || 'https://music.apple.com/',
-    provider: 'Apple Music'
+    releaseTitle: match.item.collectionName || match.item.trackName,
+    storeUrl: match.item.trackViewUrl || match.item.collectionViewUrl || 'https://music.apple.com/',
+    provider: 'Apple Music',
+    appleMusicTrackId: String(match.item.trackId || ''),
+    appleMusicStorefront: match.country.toLowerCase()
   };
 }
 
@@ -139,9 +141,13 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-    const providerLookups = [getAppleArtwork(title, artist, anime), getDeezerArtwork(title, artist, anime)]
-      .map(lookup => lookup.then(result => result || Promise.reject(new Error('No matching cover'))));
-    const artwork = await Promise.any(providerLookups).catch(() => null);
+    const [appleResult, deezerResult] = await Promise.allSettled([
+      getAppleArtwork(title, artist, anime),
+      getDeezerArtwork(title, artist, anime)
+    ]);
+    const appleArtwork = appleResult.status === 'fulfilled' ? appleResult.value : null;
+    const deezerArtwork = deezerResult.status === 'fulfilled' ? deezerResult.value : null;
+    const artwork = appleArtwork || deezerArtwork;
     if (artwork) return res.status(200).json(artwork);
 
     if (!artist) {

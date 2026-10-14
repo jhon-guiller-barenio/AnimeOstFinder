@@ -22,6 +22,12 @@ let dataSource = 'Curated picks';
 let lastApiQuery = '';
 let playingId = null;
 let playbackQueue = [];
+let activePlayerTrack = null;
+let youtubePlayer = null;
+let youtubeApiPromise = null;
+let youtubeProgressTimer = null;
+let youtubeActive = false;
+const youtubeSearchCache = new Map();
 const favorites = new Set(JSON.parse(localStorage.getItem('sakura-favorites') || '[]'));
 const grid = document.getElementById('trackGrid');
 const statusEl = document.getElementById('apiStatus');
@@ -300,8 +306,139 @@ function search(query) {
   if (!searchTerm) {loadCatalog();return;}
   loadCatalog(searchTerm,1);
 }
+function loadYouTubeIframeApi() {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (youtubeApiPromise) return youtubeApiPromise;
+  youtubeApiPromise = new Promise((resolve,reject) => {
+    const existing = document.querySelector('script[data-youtube-iframe-api]');
+    const priorCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      resolve(window.YT);
+      if (typeof priorCallback === 'function') { try { priorCallback(); } catch (_) {} }
+    };
+    if (existing) return;
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    script.dataset.youtubeIframeApi = 'true';
+    script.onerror = () => { youtubeApiPromise = null; script.remove(); reject(new Error('YouTube player could not load.')); };
+    document.head.appendChild(script);
+  });
+  return youtubeApiPromise;
+}
+function stopYouTubePlayer() {
+  if (youtubeProgressTimer) clearInterval(youtubeProgressTimer);
+  youtubeProgressTimer = null;
+  if (youtubePlayer) youtubePlayer.destroy();
+  youtubePlayer = null;
+  youtubeActive = false;
+}
+function showYouTubeStatus(message, isError = false) {
+  const mount = document.getElementById('mediaMount');
+  mount.replaceChildren();
+  const status = document.createElement('p');
+  status.className = `youtube-player-status${isError ? ' is-error' : ''}`;
+  status.textContent = message;
+  mount.appendChild(status);
+}
+function showYouTubeChoices(videos) {
+  const mount = document.getElementById('mediaMount');
+  mount.replaceChildren();
+  const heading = document.createElement('p');
+  heading.className = 'youtube-choices-heading';
+  heading.textContent = 'Choose a YouTube video to play';
+  const list = document.createElement('div');
+  list.className = 'youtube-video-choices';
+  videos.forEach(video => {
+    const choice = document.createElement('button');
+    choice.type = 'button';
+    choice.className = 'youtube-video-choice';
+    choice.addEventListener('click', () => playYouTubeVideo(video.id, video.title));
+    if (video.thumbnail) {
+      const image = document.createElement('img');
+      image.src = video.thumbnail;
+      image.alt = '';
+      image.loading = 'lazy';
+      choice.appendChild(image);
+    }
+    const copy = document.createElement('span');
+    copy.className = 'youtube-video-copy';
+    const title = document.createElement('strong');
+    title.textContent = video.title;
+    const channel = document.createElement('small');
+    channel.textContent = video.channelTitle;
+    copy.append(title, channel);
+    const play = document.createElement('span');
+    play.className = 'youtube-choice-play';
+    play.setAttribute('aria-hidden', 'true');
+    play.textContent = '▶';
+    choice.append(copy, play);
+    list.appendChild(choice);
+  });
+  mount.append(heading, list);
+}
+async function findYouTubeVideos() {
+  if (!activePlayerTrack) return;
+  const button = document.getElementById('findYouTubeTrack');
+  const preview = activeMedia();
+  if (preview) preview.pause();
+  stopYouTubePlayer();
+  button.disabled = true;
+  showYouTubeStatus('Finding playable YouTube videos…');
+  const query = [activePlayerTrack.title, activePlayerTrack.artist, activePlayerTrack.anime, 'opening theme'].filter(Boolean).join(' ');
+  try {
+    let videos = youtubeSearchCache.get(query);
+    if (!videos) {
+      const response = await fetch(`/api/youtube-search?q=${encodeURIComponent(query)}`);
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'YouTube search is unavailable.');
+      videos = payload.videos || [];
+      youtubeSearchCache.set(query, videos);
+    }
+    if (!videos.length) throw new Error('No embeddable YouTube videos were found. Try the YouTube Music search link instead.');
+    showYouTubeChoices(videos);
+  } catch (error) {
+    showYouTubeStatus(error.message || 'YouTube could not find a playable video.', true);
+  } finally {
+    button.disabled = false;
+  }
+}
+async function playYouTubeVideo(videoId, title) {
+  const preview = activeMedia();
+  if (preview) preview.pause();
+  stopYouTubePlayer();
+  const mount = document.getElementById('mediaMount');
+  mount.innerHTML = '<div class="youtube-embed-shell"><div id="youtubePlayer"></div></div>';
+  try {
+    const YT = await loadYouTubeIframeApi();
+    youtubeActive = true;
+    youtubePlayer = new YT.Player('youtubePlayer', {
+      width: '100%', height: '390', videoId,
+      playerVars: {autoplay: 1, playsinline: 1, rel: 0, origin: window.location.origin},
+      events: {
+        onReady: event => { event.target.playVideo(); youtubeProgressTimer = setInterval(syncMiniPlayer, 1000); },
+        onStateChange: event => {
+          if (event.data === YT.PlayerState.PLAYING) { dialog.classList.add('is-playing'); showMiniPlayer(); }
+          else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) dialog.classList.remove('is-playing');
+          if (event.data === YT.PlayerState.ENDED) changeTrack(1);
+          syncMiniPlayer();
+        },
+        onError: () => { stopYouTubePlayer(); showYouTubeStatus('This video cannot be embedded. Choose another result or open YouTube Music.', true); }
+      }
+    });
+    const label = document.createElement('p');
+    label.className = 'youtube-now-playing';
+    label.textContent = `Playing from YouTube: ${title}`;
+    mount.appendChild(label);
+  } catch (error) {
+    stopYouTubePlayer();
+    showYouTubeStatus(error.message || 'YouTube player could not start.', true);
+  }
+}
 function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks, options = {}) {
   if (!track) return;
+  stopYouTubePlayer();
+  activePlayerTrack = track;
   playbackQueue = queue.length ? [...queue] : [track];
   if (!playbackQueue.some(item => String(item.id) === String(track.id))) playbackQueue.unshift(track);
   playingId=track.id;
@@ -322,6 +459,8 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
   const mount=document.getElementById('mediaMount');
   mount.querySelectorAll('audio,video').forEach(media=>media.pause());
   mount.innerHTML='';
+  document.getElementById('findYouTubeTrack').disabled = false;
+  document.getElementById('findYouTubeTrack').classList.toggle('hidden', !track.title);
   const youtubeMusicLink=document.getElementById('youtubeMusicLink');
   const youtubeQuery=[track.title,track.artist,track.anime].filter(Boolean).join(' ');
   youtubeMusicLink.href=`https://music.youtube.com/search?q=${encodeURIComponent(youtubeQuery)}`;
@@ -409,6 +548,17 @@ function syncMiniPlayer() {
   const media=activeMedia();
   const seek=document.getElementById('miniSeek');
   const button=document.getElementById('miniPlayPause');
+  if (youtubeActive && youtubePlayer?.getDuration) {
+    const duration = Number(youtubePlayer.getDuration()) || 0;
+    const time = Number(youtubePlayer.getCurrentTime()) || 0;
+    seek.value = duration ? String(Math.round(time / duration * 1000)) : '0';
+    document.getElementById('miniCurrentTime').textContent = formatTime(time);
+    document.getElementById('miniDuration').textContent = formatTime(duration);
+    const isPlaying = youtubePlayer.getPlayerState() === window.YT?.PlayerState.PLAYING;
+    button.textContent = isPlaying ? 'Ⅱ' : '▶';
+    button.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
+    return;
+  }
   if (!media) return;
   const duration=Number.isFinite(media.duration) ? media.duration : 0;
   seek.value=duration ? String(Math.round(media.currentTime/duration*1000)) : '0';
@@ -418,12 +568,13 @@ function syncMiniPlayer() {
   button.setAttribute('aria-label',media.paused?'Play':'Pause');
 }
 function showMiniPlayer() {
-  if (!activeMedia() || !playingId) return;
+  if ((!activeMedia() && !youtubeActive) || !playingId) return;
   miniPlayer.hidden=false;
   updateMiniArt();
   syncMiniPlayer();
 }
 function stopPlayer() {
+  stopYouTubePlayer();
   const media=activeMedia();
   if (media) { media.pause(); media.currentTime=0; media.remove(); }
   playingId=null;
@@ -453,13 +604,25 @@ document.getElementById('previousTrack').addEventListener('click',()=>changeTrac
 document.getElementById('nextTrack').addEventListener('click',()=>changeTrack(1));
 document.getElementById('miniPrevious').addEventListener('click',()=>changeTrack(-1));
 document.getElementById('miniNext').addEventListener('click',()=>changeTrack(1));
+document.getElementById('findYouTubeTrack').addEventListener('click',findYouTubeVideos);
 document.getElementById('miniPlayPause').addEventListener('click',()=>{
+  if (youtubeActive && youtubePlayer) {
+    if (youtubePlayer.getPlayerState() === window.YT.PlayerState.PLAYING) youtubePlayer.pauseVideo();
+    else youtubePlayer.playVideo();
+    syncMiniPlayer();
+    return;
+  }
   const media=activeMedia();
   if (!media) return;
   if (media.paused) media.play().catch(()=>{}); else media.pause();
   syncMiniPlayer();
 });
 document.getElementById('miniSeek').addEventListener('input',event=>{
+  if (youtubeActive && youtubePlayer) {
+    const duration = Number(youtubePlayer.getDuration()) || 0;
+    if (duration) youtubePlayer.seekTo(Number(event.target.value) / 1000 * duration, true);
+    return;
+  }
   const media=activeMedia();
   if (media && Number.isFinite(media.duration)) media.currentTime=Number(event.target.value)/1000*media.duration;
 });

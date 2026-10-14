@@ -10,10 +10,10 @@ Discover anime opening and ending themes, find their album artwork, and listen i
 - **Search with suggestions** across anime titles, song names, and artists. Choose a suggestion or search the full catalog.
 - **Browse and filter** openings, endings, and saved favorites; sort featured songs alphabetically or by anime year, and load more results.
 - **Album artwork and release links** looked up through Apple Music and Deezer, with MusicBrainz and Cover Art Archive artwork as fallbacks. Results are cached in the browser to make repeat visits faster. Some tracks may not have a matching cover.
-- **Music player** with play/pause, previous/next, a queue, and a compact sticky player with a seek bar that stays available while scrolling. Playback uses media supplied by AnimeThemes when available.
+- **Music player** with play/pause, previous/next, a queue, and a compact sticky player with a seek bar that stays available while scrolling. Play available AnimeThemes previews or search and play embeddable YouTube videos inside SakuraSound.
 - **One-click download** for available AnimeThemes audio or theme video. The download endpoint streams eligible media from AnimeThemes and starts a file download directly.
-- **MP3 preview downloads** convert available AnimeThemes audio or extract audio from a theme video into a 192 kbps MP3. These are theme previews; full recordings open through YouTube Music search.
-- **YouTube Music search** opens a search for the selected song, artist, and anime so listeners can choose the full recording in YouTube Music. Its no-cost tier is ad-supported; playback happens on YouTube Music, while SakuraSound continues to play available AnimeThemes previews.
+- **MP3 preview downloads** convert available AnimeThemes audio or extract audio from a theme video into a 192 kbps MP3. These are theme previews; full recordings are played from YouTube videos and are not downloaded by SakuraSound.
+- **YouTube Music link** opens a search for the selected song, artist, and anime. YouTube Music's free tier is ad-supported.
 - **Favorites** saved in the browser, so they remain available on the same device and browser.
 - **Light and dark themes**, with Zero Two background artwork, subtle neon accents, and animated details.
 - **Tip Me panel** for creator support. Add a Buy Me a Coffee page URL to enable its support link.
@@ -37,13 +37,22 @@ This is a static site with serverless functions in `api/`. No build command, dat
 2. Choose **Other** as the framework preset, leave the build command empty, and set the output directory to `.`.
 3. Deploy. New commits pushed to the connected branch trigger deployments.
 
-No music-service API key is required for YouTube Music links. SakuraSound opens a provider search for the selected song; choose the correct result there. Free playback may include ads, and playback availability is controlled by YouTube Music.
+### Enable in-site YouTube playback
+
+SakuraSound searches the YouTube Data API for embeddable videos, then plays a selected result with YouTube's IFrame Player. The separate **Open YouTube Music** link works without an API key.
+
+1. In Google Cloud Console, create a project, enable [YouTube Data API v3](https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com), and create an API key.
+2. Restrict the key to **YouTube Data API v3**. Keep it private; do not add a `NEXT_PUBLIC_` or `VITE_` prefix.
+3. In Vercel **Settings → Environment Variables**, add `YOUTUBE_API_KEY` to Production (and Preview if desired), then redeploy.
+
+Google's default quota currently allows 100 `search.list` calls per day. SakuraSound searches only when a listener presses **Play in SakuraSound** and caches repeated searches. Some videos may not be available to embed; listeners can use the YouTube Music link instead. See [YouTube Data API quota](https://developers.google.com/youtube/v3/getting-started#quota) and the [IFrame Player API](https://developers.google.com/youtube/iframe_api_reference).
 
 ## Data providers and API routes
 
 - Anime theme metadata and playable media: [AnimeThemes](https://animethemes.moe/)
 - Album artwork and music listings: Apple Music / iTunes, Deezer, MusicBrainz, and Cover Art Archive
 - `GET /api/album-art` searches providers for a likely album cover and listing.
+- `GET /api/youtube-search` finds embeddable YouTube videos using the server-side `YOUTUBE_API_KEY`.
 - `GET /api/download` streams an eligible AnimeThemes media file as a download.
 - Add `format=mp3` to `GET /api/download` to extract or convert the theme audio using the bundled `ffmpeg-static` binary.
 

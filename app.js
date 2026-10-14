@@ -457,7 +457,9 @@ async function playFullTrack() {
   } catch (error) {
     console.error('Apple Music playback failed:',error);
     status.hidden=false;
-    status.textContent=error.message || 'Apple Music could not play this track. Try opening its Apple Music listing.';
+    status.textContent=error.message?.includes('not configured')
+      ? 'Add your Apple Music Team ID, Key ID, and private key in Vercel Settings → Environment Variables, then redeploy.'
+      : error.message || 'Apple Music could not play this track. Try opening its Apple Music listing.';
   } finally {
     button.disabled=false;
   }

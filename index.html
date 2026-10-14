@@ -31,6 +31,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=17" />
   <link rel="stylesheet" href="menu.css?v=1" />
+  <link rel="stylesheet" href="auth.css?v=1" />
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
@@ -140,12 +141,12 @@
   </aside>
   <button class="scroll-top" id="scrollTop" type="button" aria-label="Scroll to top" title="Back to top" hidden>↑</button>
   <dialog id="playerDialog" class="player-dialog"><button class="close-player" id="closePlayer" aria-label="Close player">×</button><div class="player-art" id="playerArt"><span>♪</span></div><div class="player-info"><div class="eyebrow">NOW PLAYING</div><h2 id="playerTitle">Song title</h2><p id="playerSubtitle">Anime title</p><div id="mediaMount"></div><div class="player-actions"><button id="previousTrack" type="button" aria-label="Previous track">⏮ <span>Previous</span></button><button id="nextTrack" type="button" aria-label="Next track">⏭ <span>Next</span></button><button id="findYouTubeTrack" class="youtube-play-button" type="button">▶ <span>Play in SakuraSound</span></button><a id="youtubeMusicLink" class="youtube-music-link hidden" href="#" target="_blank" rel="noreferrer">♫ <span>Open YouTube Music</span></a><a id="downloadTrack" href="#" download>↓ <span>Download audio</span></a><a id="downloadMp3Track" class="hidden" href="#" download>♫ <span>Download MP3</span></a></div><a id="sourceLink" href="#" target="_blank" rel="noreferrer">Open original theme ↗</a><section class="player-queue" aria-label="Up next"><div class="queue-heading">UP NEXT</div><ol id="playerQueue"></ol></section></div></dialog>
-  <dialog id="loginDialog" class="drawer-modal">
+  <dialog id="loginDialog" class="drawer-modal" aria-labelledby="loginTitle">
     <button class="drawer-modal-close" id="closeLogin" type="button" aria-label="Close sign in">×</button>
     <div class="eyebrow">YOUR SAKURASOUND ACCOUNT</div>
-    <h2>Welcome back</h2>
-    <p>Sign-in is not connected yet. Your saved songs continue to stay on this device, so you can keep exploring without an account.</p>
-    <span class="modal-note">Account access can be enabled after connecting an authentication provider to the project.</span>
+    <div class="auth-intro"><h2 id="loginTitle">Welcome to SakuraSound</h2><p>Sign in or create an account to manage your SakuraSound profile.</p></div>
+    <p id="clerkAuthStatus" role="status" aria-live="polite">Connecting to secure sign-in…</p>
+    <div id="clerkAuthMount"></div>
   </dialog>
   <dialog id="aiChatDialog" class="drawer-modal">
     <button class="drawer-modal-close" id="closeAiChat" type="button" aria-label="Close AI chat">×</button>
@@ -159,5 +160,6 @@
   <dialog id="tipDialog" class="tip-dialog"><button class="close-player" id="closeTip" aria-label="Close tip dialog">×</button><div class="tip-icon">☕</div><div class="eyebrow">SUPPORT THE PROJECT</div><h2>Keep the music playing</h2><p>If SakuraSound has helped you discover a favorite, you can support its creator with a small tip.</p><a id="tipSupportLink" class="tip-support-link" href="#" aria-disabled="true">Buy me a coffee <span>↗</span></a><small class="tip-setup-note">Buy Me a Coffee page link will be connected here.</small></dialog>
   <script src="app.js?v=20"></script>
   <script src="menu.js?v=1"></script>
+  <script src="auth.js?v=1"></script>
 </body>
 </html>

@@ -1,0 +1,11 @@
+#loginDialog{max-height:min(82vh,760px);overflow:auto}
+#loginDialog .auth-intro{margin-bottom:12px}
+#loginDialog .auth-intro p{margin-bottom:0}
+#clerkAuthStatus{margin:14px 0;padding:11px 12px;border-radius:10px;background:#fff1f6;color:#92546e;font-size:11px;line-height:1.6}
+#clerkAuthStatus[hidden]{display:none}
+#clerkAuthStatus.is-error{background:#fff0ef;color:#a3424e}
+#clerkAuthMount{min-height:100px;margin-top:12px}
+#clerkAuthMount:empty{min-height:0}
+body.dark-mode #clerkAuthStatus{background:#382437;color:#f0b1ca}
+body.dark-mode #clerkAuthStatus.is-error{background:#402426;color:#ffc1c1}
+@media(max-width:500px){#loginDialog{padding:24px 18px;max-height:88vh}}

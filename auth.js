@@ -70,8 +70,8 @@
       setStatus('Connecting to secure sign-in…');
       const response = await fetch('/api/clerk-config', {headers:{Accept:'application/json'}, cache:'no-store'});
       const config = await response.json().catch(() => ({}));
-      if (!response.ok || !config.publishableKey) {
-        throw new Error('Authentication is not configured yet. Add CLERK_PUBLISHABLE_KEY to the Vercel project settings, then redeploy.');
+      if (!response.ok || !config.publishableKey || !config.proxyUrl) {
+        throw new Error('Authentication is not configured yet. Add the Clerk publishable and secret keys to Vercel Production, then redeploy.');
       }
 
       const encodedDomain = config.publishableKey.split('_')[2];
@@ -83,11 +83,12 @@
       const frontend = 'https://' + domain;
       await loadScript(frontend + '/npm/@clerk/ui@1/dist/ui.browser.js');
       await loadScript(frontend + '/npm/@clerk/clerk-js@6/dist/clerk.browser.js', {
-        'data-clerk-publishable-key': config.publishableKey
+        'data-clerk-publishable-key': config.publishableKey,
+        'data-clerk-proxy-url': config.proxyUrl
       });
       if (!window.Clerk) throw new Error('Clerk did not start. Check the configured publishable key.');
-      clerk = new window.Clerk(config.publishableKey);
-      await clerk.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});
+      clerk = new window.Clerk(config.publishableKey, {proxyUrl: config.proxyUrl});
+      await clerk.load({proxyUrl: config.proxyUrl, ui:{ClerkUI:window.__internal_ClerkUICtor}});
       clerk.addListener?.(() => {
         updateAccountLabels();
         mountAccountPanel();

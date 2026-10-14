@@ -59,3 +59,16 @@ Google's default quota currently allows 100 `search.list` calls per day. SakuraS
 Set `MUSICBRAINZ_CONTACT` in Vercel to a project contact URL or email if you want the album-art API to use it in its User-Agent.
 
 Music and artwork remain the property of their respective rights holders. Availability depends on the providers and the specific anime theme.
+
+
+## Authentication setup
+
+SakuraSound uses Clerk for sign-up, sign-in, and account profile management.
+
+1. Create a Clerk application at [dashboard.clerk.com](https://dashboard.clerk.com) and enable the sign-in methods you want to offer.
+2. In Clerk, add `https://sakurasound.vercel.app` as an allowed application origin. Add your local development URL too if needed.
+3. In Clerk's API keys page, copy the **Publishable key**.
+4. In Vercel, open the SakuraSound project → **Settings → Environment Variables**. Add `CLERK_PUBLISHABLE_KEY` with the publishable key for Production, Preview, and Development.
+5. Redeploy the site.
+
+The client reads the public key from `/api/clerk-config`; no secret key is exposed or needed for the sign-in UI. Once configured, the Log in button opens Clerk's secure sign-in/sign-up form, and signed-in users can manage their profile. Saved song favorites remain stored in the browser on that device; syncing them across devices requires a database integration.

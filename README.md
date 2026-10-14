@@ -49,7 +49,7 @@ Google's default quota currently allows 100 `search.list` calls per day. SakuraS
 
 ### Enable AI chat
 
-The floating **Help & AI** button opens SakuraSound's built-in assistant. It can answer questions about finding anime themes and using the player. The **Customer support** link also opens the project's GitHub support page.
+The floating **Help & AI** button opens SakuraSound's built-in assistant. It can answer questions about finding anime themes and using the player. The **Customer support** link also opens the project's GitHub support page. Chat uses Vercel AI Gateway's currently free `inclusionai/ling-3.0-flash-sante-free` model; free model availability and rate limits can change.
 
 AI replies use Vercel AI Gateway from the server-side `/api/ai-chat` route. To enable them:
 

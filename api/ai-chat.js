@@ -2,7 +2,7 @@ const requestBuckets = new Map();
 const WINDOW_MS = 60_000;
 const REQUESTS_PER_WINDOW = 12;
 const AI_ENDPOINT = 'https://ai-gateway.vercel.sh/v1/chat/completions';
-const DEFAULT_MODEL = 'alibaba/qwen-3-14b';
+const DEFAULT_MODEL = 'inclusionai/ling-3.0-flash-sante-free';
 
 function replyError(res, status, message) {
   res.setHeader('Cache-Control', 'no-store');
@@ -77,7 +77,7 @@ module.exports = async function handler(req, res) {
         Accept: 'text/event-stream'
       },
       body: JSON.stringify({
-        model: process.env.SAKURASOUND_AI_MODEL || DEFAULT_MODEL,
+        model: DEFAULT_MODEL,
         messages: [{role: 'system', content: prompt}, ...messages],
         stream: true,
         temperature: 0.6,

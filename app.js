@@ -88,7 +88,7 @@ function render() {
     <div class="track-content"><div class="track-meta"><span>${safeText(t.type || 'opening')}</span><span>${t.year ? safeText(t.year) : 'ANIME OST'}</span></div><h3 class="track-title" title="${safeText(t.title)}">${safeText(t.title)}</h3><div class="track-anime" title="${safeText(t.anime)}">${safeText(t.anime)}</div><div class="track-bottom"><span class="artist">${safeText(t.artist || 'Artist information unavailable')}</span><span class="track-index">${String(i+1).padStart(2,'0')}</span></div></div>
   </article>`).join('');
   grid.querySelectorAll('[data-save]').forEach(b => b.addEventListener('click', () => toggleFavorite(b.dataset.save)));
-  grid.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', () => openPlayer(tracks.find(t => String(t.id) === b.dataset.play), getVisibleTracks())));
+  grid.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', () => openPlayer(tracks.find(t => String(t.id) === b.dataset.play), tracks)));
   revealTrackCards();
   observeAlbumArt();
   statusEl.querySelector('span:last-child').textContent = dataSource;
@@ -438,7 +438,7 @@ async function playYouTubeVideo(videoId, title) {
         onStateChange: event => {
           if (event.data === YT.PlayerState.PLAYING) { dialog.classList.add('is-playing'); showMiniPlayer(); }
           else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) dialog.classList.remove('is-playing');
-          if (event.data === YT.PlayerState.ENDED) changeTrack(1);
+          if (event.data === YT.PlayerState.ENDED) changeTrack(1, true);
           syncMiniPlayer();
         },
         onError: () => { stopYouTubePlayer(); showYouTubeStatus('This video cannot be embedded. Choose another result or open YouTube Music.', true); }
@@ -500,7 +500,7 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     media.addEventListener('pause',()=>{dialog.classList.remove('is-playing');syncMiniPlayer();});
     media.addEventListener('timeupdate',syncMiniPlayer);
     media.addEventListener('durationchange',syncMiniPlayer);
-    media.addEventListener('ended', () => changeTrack(1));
+    media.addEventListener('ended', () => changeTrack(1, true));
     mount.appendChild(media);
     sourceLink.href=mediaUrl;
     sourceLink.classList.remove('hidden');
@@ -527,26 +527,31 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
   }
   renderPlayerQueue();
   if (options.keepMini && mediaUrl) showMiniPlayer();
-  else if (!dialog.open) dialog.showModal();
+  else if (!dialog.open && !options.autoContinue) dialog.showModal();
+  if (options.autoContinue && !mediaUrl && playbackQueue.length > 1) {
+    window.setTimeout(() => changeTrack(1, true), 0);
+  }
 }
 function renderPlayerQueue() {
   const list=document.getElementById('playerQueue');
   const currentIndex=playbackQueue.findIndex(track=>String(track.id)===String(playingId));
-  const nextTracks=currentIndex<0 ? playbackQueue : playbackQueue.slice(currentIndex+1);
+  const nextTracks=currentIndex<0 ? playbackQueue : playbackQueue.slice(currentIndex+1).concat(playbackQueue.slice(0,currentIndex));
   list.innerHTML=nextTracks.slice(0,5).map(track=>`<li><button type="button" data-queue-track="${safeText(track.id)}"><span>${safeText(track.title)}</span><small>${safeText(track.anime)}</small></button></li>`).join('');
-  if (!nextTracks.length) list.innerHTML='<li class="queue-empty">End of this list</li>';
+  if (!nextTracks.length) list.innerHTML='<li class="queue-empty">No tracks in this list</li>';
   list.querySelectorAll('[data-queue-track]').forEach(button=>button.addEventListener('click',()=>{
     const selected=playbackQueue.find(track=>String(track.id)===button.dataset.queueTrack);
     if (selected) openPlayer(selected, playbackQueue);
   }));
   const index=currentIndex;
-  document.getElementById('previousTrack').disabled=playbackQueue.length<2 || index<=0;
-  document.getElementById('nextTrack').disabled=playbackQueue.length<2 || index<0 || index>=playbackQueue.length-1;
+  document.getElementById('previousTrack').disabled=playbackQueue.length<2 || index<0;
+  document.getElementById('nextTrack').disabled=playbackQueue.length<2 || index<0;
 }
-function changeTrack(direction) {
+function changeTrack(direction, autoContinue = false) {
   const index=playbackQueue.findIndex(track=>String(track.id)===String(playingId));
-  const next=playbackQueue[index+direction];
-  if (next) openPlayer(next, playbackQueue, {keepMini:!dialog.open});
+  if (!playbackQueue.length || index < 0) return;
+  const nextIndex=(index+direction+playbackQueue.length)%playbackQueue.length;
+  const next=playbackQueue[nextIndex];
+  if (next) openPlayer(next, playbackQueue, {keepMini:!dialog.open,autoContinue});
 }
 function formatTime(value) {
   if (!Number.isFinite(value) || value<0) return '0:00';

@@ -133,10 +133,16 @@ function observeAlbumArt() {
 }
 
 function queueAlbumArt(cover, track, key) {
+  if (track.image) {
+    const imageSelector = cover.classList.contains('player-art') ? '.player-album-cover' : '.album-cover';
+    if (!cover.querySelector(imageSelector)) {
+      applyAlbumArt(cover, track, {imageUrl:track.image,releaseTitle:track.anime || 'Anime artwork',provider:'AnimeThemes',artworkType:'anime'});
+    }
+  }
   const cached = albumArtCache.get(key);
   if (cached) return applyAlbumArt(cover, track, cached);
   if (cached === null) return;
-  const saved = localStorage.getItem(`sakura-art:v8:${key}`);
+  const saved = localStorage.getItem(`sakura-art:v9:${key}`);
   if (saved) {
     try {
       const data = JSON.parse(saved);
@@ -144,7 +150,7 @@ function queueAlbumArt(cover, track, key) {
         albumArtCache.set(key, data.result);
         return applyAlbumArt(cover, track, data.result);
       }
-    } catch (_) { localStorage.removeItem(`sakura-art:v8:${key}`); }
+    } catch (_) { localStorage.removeItem(`sakura-art:v9:${key}`); }
   }
   const existing = albumArtJobs.get(key);
   if (existing) {
@@ -172,7 +178,7 @@ async function loadAlbumArt(job) {
   let result = null;
   try {
     const artist = job.track.artist && job.track.artist !== 'Artist information unavailable' ? job.track.artist : '';
-    const params = new URLSearchParams({title:job.track.title, artist, anime:job.track.anime || '', v:'8'});
+    const params = new URLSearchParams({title:job.track.title, artist, anime:job.track.anime || '', v:'9'});
     const response = await fetch(`/api/album-art?${params}`);
     if (response.ok) {
       const payload = await response.json();
@@ -183,7 +189,7 @@ async function loadAlbumArt(job) {
     result = {imageUrl:job.track.image,releaseTitle:job.track.anime || 'Anime artwork',provider:'AnimeThemes',artworkType:'anime'};
   }
   albumArtCache.set(job.key, result);
-  try { localStorage.setItem(`sakura-art:v8:${job.key}`, JSON.stringify({result,found:!!result,savedAt:Date.now()})); } catch (_) {}
+  try { localStorage.setItem(`sakura-art:v9:${job.key}`, JSON.stringify({result,found:!!result,savedAt:Date.now()})); } catch (_) {}
   albumArtJobs.delete(job.key);
   job.targets.forEach(({cover,track}) => applyAlbumArt(cover,track,result));
 }
@@ -191,9 +197,15 @@ async function loadAlbumArt(job) {
 function applyAlbumArt(cover, track, result) {
   const isPlayer = cover.classList.contains('player-art');
   if (!result?.imageUrl || !cover.isConnected || (isPlayer && cover.dataset.artKey !== `${track.title}|${track.artist || ''}|${track.anime || ''}`.toLowerCase())) return;
-  if (cover.querySelector(isPlayer ? '.player-album-cover' : '.album-cover')) return;
+  const existingImage = cover.querySelector(isPlayer ? '.player-album-cover' : '.album-cover');
+  if (existingImage) {
+    const isAnimeFallback = existingImage.dataset.artworkType === 'anime';
+    if (!isAnimeFallback || result.artworkType === 'anime') return;
+    existingImage.remove();
+  }
   const image = document.createElement('img');
   image.className = isPlayer ? 'player-album-cover' : 'album-cover';
+  image.dataset.artworkType = result.artworkType || 'album';
   image.alt = result.artworkType === 'anime' ? `${track.anime} artwork` : `${track.title} album artwork`;
   image.loading = isPlayer ? 'eager' : 'lazy';
   if (isPlayer) image.fetchPriority = 'high';

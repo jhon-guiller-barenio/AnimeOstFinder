@@ -63,12 +63,13 @@ Music and artwork remain the property of their respective rights holders. Availa
 
 ## Authentication setup
 
-SakuraSound uses Clerk for sign-up, sign-in, and account profile management.
+SakuraSound uses Clerk for sign-up, sign-in, and account profile management. Because the production site uses a `vercel.app` hostname, Clerk Frontend API requests are routed through the same-domain `/__clerk` proxy.
 
 1. Create a Clerk application at [dashboard.clerk.com](https://dashboard.clerk.com) and enable the sign-in methods you want to offer.
 2. In Clerk, add `https://sakurasound.vercel.app` as an allowed application origin. Add your local development URL too if needed.
-3. In Clerk's API keys page, copy the **Publishable key**.
-4. In Vercel, open the SakuraSound project → **Settings → Environment Variables**. Add `CLERK_PUBLISHABLE_KEY` with the publishable key for Production, Preview, and Development.
-5. Redeploy the site.
+3. In Clerk's API keys page, copy the **Publishable key** and **Secret key**.
+4. In Vercel, open SakuraSound → **Settings → Environment Variables**. Add `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` to Production. Keep the secret key private; it is only read by the server-side proxy. Optionally add `CLERK_PROXY_URL` with the value `https://sakurasound.vercel.app/__clerk`.
+5. Push or redeploy the latest commit so Vercel builds the proxy route.
+6. In Clerk's **Domains** settings, set the Frontend API proxy URL to `https://sakurasound.vercel.app/__clerk`, then use Clerk's **Verify** action.
 
-The client reads the public key from `/api/clerk-config`; no secret key is exposed or needed for the sign-in UI. Once configured, the Log in button opens Clerk's secure sign-in/sign-up form, and signed-in users can manage their profile. Saved song favorites remain stored in the browser on that device; syncing them across devices requires a database integration.
+The client reads the public publishable key and proxy URL from `/api/clerk-config`; the secret key is never sent to the browser. Once configured, the Log in button opens Clerk's secure sign-in/sign-up form, and signed-in users can manage their profile. Saved song favorites remain stored in the browser on that device; syncing them across devices requires a database integration.

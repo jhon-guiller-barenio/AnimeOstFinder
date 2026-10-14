@@ -1,1 +1,1 @@
-module.exports = require('../clerk-proxy-handler');
+module.exports = require('../../lib/clerk-proxy-handler');

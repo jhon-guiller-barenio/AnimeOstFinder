@@ -31,7 +31,7 @@ The catalog can also be viewed from a basic static server, but album artwork loo
 
 ## Deploy to Vercel
 
-This is a static site with serverless functions in `api/`. No build command, database, or API key is required.
+This is a static site with serverless functions in `api/`. No build command or database is required. Provider-backed features need the relevant optional API keys listed below.
 
 1. Import this GitHub repository into Vercel.
 2. Choose **Other** as the framework preset, leave the build command empty, and set the output directory to `.`.
@@ -46,6 +46,19 @@ SakuraSound searches the YouTube Data API for embeddable videos, then plays a se
 3. In Vercel **Settings → Environment Variables**, add `YOUTUBE_API_KEY` to Production (and Preview if desired), then redeploy.
 
 Google's default quota currently allows 100 `search.list` calls per day. SakuraSound searches only when a listener presses **Play in SakuraSound** and caches repeated searches. Some videos may not be available to embed; listeners can use the YouTube Music link instead. See [YouTube Data API quota](https://developers.google.com/youtube/v3/getting-started#quota) and the [IFrame Player API](https://developers.google.com/youtube/iframe_api_reference).
+
+### Enable AI chat
+
+The floating **Help & AI** button opens SakuraSound's built-in assistant. It can answer questions about finding anime themes and using the player. The **Customer support** link also opens the project's GitHub support page.
+
+AI replies use Vercel AI Gateway from the server-side `/api/ai-chat` route. To enable them:
+
+1. In the Vercel Dashboard, open **AI Gateway** and create an API key.
+2. Open the SakuraSound project → **Settings → Environment Variables**.
+3. Add `AI_GATEWAY_API_KEY` for Production (and Preview if you want chat on preview deployments). Keep it server-side; do not expose it in browser code or commit it to GitHub.
+4. Redeploy the project so the function receives the new variable.
+
+If the key is not configured or the AI provider is unavailable, the chat displays an error and the customer support link remains available. AI responses depend on the selected model and Vercel AI Gateway account configuration.
 
 ## Data providers and API routes
 

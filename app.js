@@ -22,10 +22,6 @@ let dataSource = 'Curated picks';
 let lastApiQuery = '';
 let playingId = null;
 let playbackQueue = [];
-let activePlayerTrack = null;
-let appleMusicInstance = null;
-let appleMusicSetupPromise = null;
-let appleMusicActive = false;
 const favorites = new Set(JSON.parse(localStorage.getItem('sakura-favorites') || '[]'));
 const grid = document.getElementById('trackGrid');
 const statusEl = document.getElementById('apiStatus');
@@ -186,14 +182,6 @@ async function loadAlbumArt(job) {
 function applyAlbumArt(cover, track, result) {
   const isPlayer = cover.classList.contains('player-art');
   if (!result?.imageUrl || !cover.isConnected || (isPlayer && cover.dataset.artKey !== `${track.title}|${track.artist || ''}|${track.anime || ''}`.toLowerCase())) return;
-  if (result.appleMusicTrackId) {
-    track.appleMusicTrackId = result.appleMusicTrackId;
-    track.appleMusicStorefront = result.appleMusicStorefront || 'us';
-    track.appleMusicUrl = result.storeUrl || '';
-    if (isPlayer && activePlayerTrack && String(activePlayerTrack.id) === String(track.id)) {
-      document.getElementById('playFullTrack').classList.remove('hidden');
-    }
-  }
   if (cover.querySelector(isPlayer ? '.player-album-cover' : '.album-cover')) return;
   const image = document.createElement('img');
   image.className = isPlayer ? 'player-album-cover' : 'album-cover';
@@ -212,11 +200,11 @@ function applyAlbumArt(cover, track, result) {
   if (result.storeUrl && result.provider === 'Apple Music') {
     const link = document.createElement('a');
     link.className = 'art-store-link';
-    link.href = result.storeUrl;
+    link.href = `https://music.youtube.com/search?q=${encodeURIComponent(`${result.releaseTitle || track.title} ${track.artist || ''}`.trim())}`;
     link.target = '_blank';
     link.rel = 'noreferrer';
-    link.textContent = 'Listen on Apple Music ↗';
-    link.setAttribute('aria-label', `Open ${result.releaseTitle || track.title} on Apple Music`);
+    link.textContent = 'Find album on YouTube Music ↗';
+    link.setAttribute('aria-label', `Find ${result.releaseTitle || track.title} on YouTube Music`);
     cover.appendChild(link);
   }
 }
@@ -314,9 +302,6 @@ function search(query) {
 }
 function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks, options = {}) {
   if (!track) return;
-  if (appleMusicActive && appleMusicInstance) appleMusicInstance.pause();
-  appleMusicActive = false;
-  activePlayerTrack = track;
   playbackQueue = queue.length ? [...queue] : [track];
   if (!playbackQueue.some(item => String(item.id) === String(track.id))) playbackQueue.unshift(track);
   playingId=track.id;
@@ -337,11 +322,10 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
   const mount=document.getElementById('mediaMount');
   mount.querySelectorAll('audio,video').forEach(media=>media.pause());
   mount.innerHTML='';
-  const musicStatus=document.getElementById('musicStatus');
-  musicStatus.hidden=true;
-  musicStatus.textContent='';
-  document.getElementById('playFullTrack').classList.toggle('hidden', !track.appleMusicTrackId);
-  document.getElementById('playFullTrack').querySelector('span').textContent='Play full track';
+  const youtubeMusicLink=document.getElementById('youtubeMusicLink');
+  const youtubeQuery=[track.title,track.artist,track.anime].filter(Boolean).join(' ');
+  youtubeMusicLink.href=`https://music.youtube.com/search?q=${encodeURIComponent(youtubeQuery)}`;
+  youtubeMusicLink.classList.toggle('hidden', !track.title);
   dialog.classList.remove('is-playing');
   miniPlayer.hidden=true;
   const mediaUrl=track.audioUrl || track.videoUrl;
@@ -385,84 +369,8 @@ function openPlayer(track, queue = playbackQueue.length ? playbackQueue : tracks
     downloadMp3Link.classList.add('hidden');
   }
   renderPlayerQueue();
-  if (options.keepMini && (mediaUrl || appleMusicActive)) showMiniPlayer();
+  if (options.keepMini && mediaUrl) showMiniPlayer();
   else if (!dialog.open) dialog.showModal();
-}
-async function getAppleMusicInstance() {
-  if (appleMusicInstance) return appleMusicInstance;
-  if (!appleMusicSetupPromise) {
-    appleMusicSetupPromise = (async () => {
-      if (!window.MusicKit) {
-        await new Promise((resolve,reject) => {
-          const script=document.createElement('script');
-          script.src='https://js-cdn.music.apple.com/musickit/v3/musickit.js';
-          script.async=true;
-          script.onload=resolve;
-          script.onerror=()=>reject(new Error('Apple MusicKit could not be loaded.'));
-          document.head.appendChild(script);
-        });
-      }
-      const response=await fetch('/api/apple-music-token');
-      const payload=await response.json().catch(()=>({}));
-      if (!response.ok || !payload.developerToken) throw new Error(payload.error || 'Apple Music is not configured yet.');
-      await window.MusicKit.configure({
-        developerToken:payload.developerToken,
-        app:{name:'SakuraSound',build:'1.0.0'}
-      });
-      appleMusicInstance=window.MusicKit.getInstance();
-      appleMusicInstance.addEventListener('playbackStateDidChange',syncMiniPlayer);
-      appleMusicInstance.addEventListener('playbackTimeDidChange',syncMiniPlayer);
-      return appleMusicInstance;
-    })().catch(error=>{
-      appleMusicSetupPromise=null;
-      throw error;
-    });
-  }
-  return appleMusicSetupPromise;
-}
-async function playFullTrack() {
-  const track=activePlayerTrack;
-  if (!track?.appleMusicTrackId) return;
-  const button=document.getElementById('playFullTrack');
-  const status=document.getElementById('musicStatus');
-  try {
-    button.disabled=true;
-    status.hidden=false;
-    status.textContent='Connecting to Apple Music…';
-    const music=await getAppleMusicInstance();
-    if (!music.isAuthorized) await music.authorize();
-    if (appleMusicActive && String(activePlayerTrack?.appleMusicTrackId)===String(track.appleMusicTrackId)) {
-      if (music.player.isPlaying) {
-        music.pause();
-        button.querySelector('span').textContent='Resume full track';
-        status.textContent='Paused in Apple Music.';
-      } else {
-        await music.play();
-        button.querySelector('span').textContent='Pause full track';
-        status.textContent='Playing the full track from Apple Music.';
-      }
-      syncMiniPlayer();
-      return;
-    }
-    const media=activeMedia();
-    if (media) { media.pause(); media.remove(); }
-    document.getElementById('mediaMount').innerHTML='<div class="apple-playback-note">♫ Full-length playback powered by Apple Music</div>';
-    await music.setQueue({song:String(track.appleMusicTrackId)});
-    await music.play();
-    appleMusicActive=true;
-    button.querySelector('span').textContent='Pause full track';
-    status.textContent='Playing the full track from Apple Music. An Apple Music subscription may be required.';
-    dialog.classList.add('is-playing');
-    syncMiniPlayer();
-  } catch (error) {
-    console.error('Apple Music playback failed:',error);
-    status.hidden=false;
-    status.textContent=error.message?.includes('not configured')
-      ? 'Add your Apple Music Team ID, Key ID, and private key in Vercel Settings → Environment Variables, then redeploy.'
-      : error.message || 'Apple Music could not play this track. Try opening its Apple Music listing.';
-  } finally {
-    button.disabled=false;
-  }
 }
 function renderPlayerQueue() {
   const list=document.getElementById('playerQueue');
@@ -501,19 +409,6 @@ function syncMiniPlayer() {
   const media=activeMedia();
   const seek=document.getElementById('miniSeek');
   const button=document.getElementById('miniPlayPause');
-  if (appleMusicActive && appleMusicInstance?.player) {
-    const player=appleMusicInstance.player;
-    const duration=Number.isFinite(player.currentPlaybackDuration) ? player.currentPlaybackDuration : 0;
-    const time=Number.isFinite(player.currentPlaybackTime) ? player.currentPlaybackTime : 0;
-    seek.value=duration ? String(Math.round(time/duration*1000)) : '0';
-    document.getElementById('miniCurrentTime').textContent=formatTime(time);
-    document.getElementById('miniDuration').textContent=formatTime(duration);
-    button.textContent=player.isPlaying ? 'Ⅱ' : '▶';
-    button.setAttribute('aria-label',player.isPlaying?'Pause':'Play');
-    const fullButton=document.getElementById('playFullTrack');
-    if (activePlayerTrack?.appleMusicTrackId) fullButton.querySelector('span').textContent=player.isPlaying?'Pause full track':'Resume full track';
-    return;
-  }
   if (!media) return;
   const duration=Number.isFinite(media.duration) ? media.duration : 0;
   seek.value=duration ? String(Math.round(media.currentTime/duration*1000)) : '0';
@@ -523,7 +418,7 @@ function syncMiniPlayer() {
   button.setAttribute('aria-label',media.paused?'Play':'Pause');
 }
 function showMiniPlayer() {
-  if ((!activeMedia() && !appleMusicActive) || !playingId) return;
+  if (!activeMedia() || !playingId) return;
   miniPlayer.hidden=false;
   updateMiniArt();
   syncMiniPlayer();
@@ -531,8 +426,6 @@ function showMiniPlayer() {
 function stopPlayer() {
   const media=activeMedia();
   if (media) { media.pause(); media.currentTime=0; media.remove(); }
-  if (appleMusicActive && appleMusicInstance) appleMusicInstance.stop();
-  appleMusicActive=false;
   playingId=null;
   miniPlayer.hidden=true;
   dialog.classList.remove('is-playing');
@@ -560,25 +453,13 @@ document.getElementById('previousTrack').addEventListener('click',()=>changeTrac
 document.getElementById('nextTrack').addEventListener('click',()=>changeTrack(1));
 document.getElementById('miniPrevious').addEventListener('click',()=>changeTrack(-1));
 document.getElementById('miniNext').addEventListener('click',()=>changeTrack(1));
-document.getElementById('playFullTrack').addEventListener('click',playFullTrack);
 document.getElementById('miniPlayPause').addEventListener('click',()=>{
-  if (appleMusicActive && appleMusicInstance) {
-    if (appleMusicInstance.player.isPlaying) appleMusicInstance.pause();
-    else appleMusicInstance.play().catch(()=>{});
-    syncMiniPlayer();
-    return;
-  }
   const media=activeMedia();
   if (!media) return;
   if (media.paused) media.play().catch(()=>{}); else media.pause();
   syncMiniPlayer();
 });
 document.getElementById('miniSeek').addEventListener('input',event=>{
-  if (appleMusicActive && appleMusicInstance?.player) {
-    const duration=appleMusicInstance.player.currentPlaybackDuration;
-    if (Number.isFinite(duration)) appleMusicInstance.seekToTime(Number(event.target.value)/1000*duration).catch(()=>{});
-    return;
-  }
   const media=activeMedia();
   if (media && Number.isFinite(media.duration)) media.currentTime=Number(event.target.value)/1000*media.duration;
 });

@@ -136,7 +136,7 @@ function queueAlbumArt(cover, track, key) {
   const cached = albumArtCache.get(key);
   if (cached) return applyAlbumArt(cover, track, cached);
   if (cached === null) return;
-  const saved = localStorage.getItem(`sakura-art:v7:${key}`);
+  const saved = localStorage.getItem(`sakura-art:v8:${key}`);
   if (saved) {
     try {
       const data = JSON.parse(saved);
@@ -144,7 +144,7 @@ function queueAlbumArt(cover, track, key) {
         albumArtCache.set(key, data.result);
         return applyAlbumArt(cover, track, data.result);
       }
-    } catch (_) { localStorage.removeItem(`sakura-art:v7:${key}`); }
+    } catch (_) { localStorage.removeItem(`sakura-art:v8:${key}`); }
   }
   const existing = albumArtJobs.get(key);
   if (existing) {
@@ -172,15 +172,18 @@ async function loadAlbumArt(job) {
   let result = null;
   try {
     const artist = job.track.artist && job.track.artist !== 'Artist information unavailable' ? job.track.artist : '';
-    const params = new URLSearchParams({title:job.track.title, artist, anime:job.track.anime || '', v:'7'});
+    const params = new URLSearchParams({title:job.track.title, artist, anime:job.track.anime || '', v:'8'});
     const response = await fetch(`/api/album-art?${params}`);
     if (response.ok) {
       const payload = await response.json();
       if (payload.imageUrl) result = payload;
     }
-  } catch (_) { /* Keep the illustrated fallback when the art provider is unavailable. */ }
+  } catch (_) { /* Fall back to the anime's own image if album catalogs are unavailable. */ }
+  if (!result && job.track.image) {
+    result = {imageUrl:job.track.image,releaseTitle:job.track.anime || 'Anime artwork',provider:'AnimeThemes',artworkType:'anime'};
+  }
   albumArtCache.set(job.key, result);
-  try { localStorage.setItem(`sakura-art:v7:${job.key}`, JSON.stringify({result,found:!!result,savedAt:Date.now()})); } catch (_) {}
+  try { localStorage.setItem(`sakura-art:v8:${job.key}`, JSON.stringify({result,found:!!result,savedAt:Date.now()})); } catch (_) {}
   albumArtJobs.delete(job.key);
   job.targets.forEach(({cover,track}) => applyAlbumArt(cover,track,result));
 }
@@ -191,14 +194,17 @@ function applyAlbumArt(cover, track, result) {
   if (cover.querySelector(isPlayer ? '.player-album-cover' : '.album-cover')) return;
   const image = document.createElement('img');
   image.className = isPlayer ? 'player-album-cover' : 'album-cover';
-  image.alt = `${track.title} album artwork`;
+  image.alt = result.artworkType === 'anime' ? `${track.anime} artwork` : `${track.title} album artwork`;
   image.loading = isPlayer ? 'eager' : 'lazy';
   if (isPlayer) image.fetchPriority = 'high';
   image.src = result.imageUrl;
-  image.title = `Album art: ${result.releaseTitle || 'OST release'} · ${result.provider || 'Cover Art Archive'}`;
+  image.title = result.artworkType === 'anime' ? `Anime artwork: ${track.anime}` : `Album art: ${result.releaseTitle || 'OST release'} · ${result.provider || 'Cover Art Archive'}`;
   image.onerror = () => {
     image.remove();
     cover.classList.remove('has-art');
+    if (result.artworkType !== 'anime' && track.image) {
+      applyAlbumArt(cover, track, {imageUrl:track.image,releaseTitle:track.anime || 'Anime artwork',provider:'AnimeThemes',artworkType:'anime'});
+    }
   };
   cover.classList.add('has-art');
   cover.prepend(image);

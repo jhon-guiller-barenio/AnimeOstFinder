@@ -75,11 +75,13 @@
       }
 
       const proxyBase = config.proxyUrl.replace(/\/+$/, '');
-      await loadScript(proxyBase + '/npm/@clerk/ui@1/dist/ui.browser.js');
-      await loadScript(proxyBase + '/npm/@clerk/clerk-js@6/dist/clerk.browser.js', {
-        'data-clerk-publishable-key': config.publishableKey,
-        'data-clerk-proxy-url': config.proxyUrl
-      });
+      await Promise.all([
+        loadScript(proxyBase + '/npm/@clerk/ui@1/dist/ui.browser.js'),
+        loadScript(proxyBase + '/npm/@clerk/clerk-js@6/dist/clerk.browser.js', {
+          'data-clerk-publishable-key': config.publishableKey,
+          'data-clerk-proxy-url': config.proxyUrl
+        })
+      ]);
       if (!window.Clerk) throw new Error('Clerk did not start. Check the configured publishable key.');
       clerk = new window.Clerk(config.publishableKey, {proxyUrl: config.proxyUrl});
       await clerk.load({proxyUrl: config.proxyUrl, ui:{ClerkUI:window.__internal_ClerkUICtor}});

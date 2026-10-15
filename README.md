@@ -31,7 +31,7 @@ The catalog can also be viewed from a basic static server, but album artwork loo
 
 ## Deploy to Vercel
 
-This is a static site with serverless functions in `api/`. No build command or database is required. Provider-backed features need the relevant optional API keys listed below.
+This is a static site with serverless functions in `api/`. Leave the build command empty and set the output directory to `.`. The public catalog works without a database; the admin activity dashboard uses Neon. Provider-backed features need the relevant API keys listed below.
 
 1. Import this GitHub repository into Vercel.
 2. Choose **Other** as the framework preset, leave the build command empty, and set the output directory to `.`.
@@ -83,6 +83,8 @@ Apply the database migration in `db/migrations/001_activity_events.sql` if setti
 
 - Anime theme metadata and playable media: [AnimeThemes](https://animethemes.moe/)
 - Album artwork and music listings: Apple Music / iTunes, Deezer, MusicBrainz, and Cover Art Archive
+- `POST /api/activity` records privacy-conscious user activity in Neon.
+- `GET /api/admin/activity` returns activity summaries to a Clerk administrator.
 - `GET /api/album-art` searches providers for a likely album cover and listing.
 - `GET /api/youtube-search` finds embeddable YouTube videos using the server-side `YOUTUBE_API_KEY`.
 - `GET /api/download` streams an eligible AnimeThemes media file as a download.

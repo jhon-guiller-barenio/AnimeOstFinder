@@ -33,9 +33,9 @@ module.exports = async function handler(req, res) {
     return replyError(res, 405, 'Method not allowed.');
   }
 
-  const apiKey = process.env.AI_GATEWAY_API_KEY;
+  const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.AI_GATEWAY_KEY;
   if (!apiKey) {
-    return replyError(res, 503, 'AI chat is not connected yet. Add AI_GATEWAY_API_KEY to the SakuraSound project in Vercel, then redeploy.');
+    return replyError(res, 503, 'AI chat is not connected yet. Add AI_GATEWAY_API_KEY (or the existing AI_GATEWAY_KEY) to the SakuraSound project in Vercel, then redeploy.');
   }
 
   const ip = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown').split(',')[0].trim();

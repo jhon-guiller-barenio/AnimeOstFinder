@@ -4,10 +4,14 @@
   const status = document.getElementById('clerkAuthStatus');
   const headerLogin = document.getElementById('loginHeader');
   const drawerLogin = document.getElementById('drawerLogin');
+  const modeTabs = document.getElementById('authModeTabs');
+  const signInTab = document.getElementById('signInTab');
+  const signUpTab = document.getElementById('signUpTab');
   if (!dialog || !mount || !status || !headerLogin) return;
 
   let clerk;
   let loading;
+  let selectedMode = 'signin';
   let mountedMode = '';
 
   function setStatus(message, isError = false) {
@@ -28,19 +32,37 @@
       const labelNode = [...drawerLogin.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
       if (labelNode) labelNode.textContent = signedIn ? 'Account ' : 'Log in ';
     }
+    if (modeTabs) modeTabs.hidden = signedIn;
+  }
+
+  function unmountCurrent() {
+    if (!clerk || !mountedMode) return;
+    if (mountedMode === 'signin') clerk.unmountSignIn?.(mount);
+    if (mountedMode === 'signup') clerk.unmountSignUp?.(mount);
+    if (mountedMode === 'profile') clerk.unmountUserProfile?.(mount);
+    mountedMode = '';
   }
 
   function mountAccountPanel() {
     if (!clerk || !dialog.open) return;
-    const mode = clerk.isSignedIn ? 'profile' : 'signin';
+    const mode = clerk.isSignedIn ? 'profile' : selectedMode;
     if (mountedMode === mode) return;
-    if (mountedMode === 'signin') clerk.unmountSignIn?.(mount);
-    if (mountedMode === 'profile') clerk.unmountUserProfile?.(mount);
+    unmountCurrent();
     mount.replaceChildren();
     if (mode === 'profile') clerk.mountUserProfile(mount);
+    else if (mode === 'signup') clerk.mountSignUp(mount);
     else clerk.mountSignIn(mount);
     mountedMode = mode;
     setStatus('');
+    updateAccountLabels();
+  }
+
+  function selectMode(mode) {
+    selectedMode = mode;
+    signInTab?.setAttribute('aria-selected', String(mode === 'signin'));
+    signUpTab?.setAttribute('aria-selected', String(mode === 'signup'));
+    if (clerk) mountAccountPanel();
+    else initialize();
   }
 
   function loadScript(src, attributes = {}) {
@@ -64,14 +86,17 @@
   }
 
   async function initialize() {
-    if (clerk) return clerk;
+    if (clerk) {
+      mountAccountPanel();
+      return clerk;
+    }
     if (loading) return loading;
     loading = (async () => {
       setStatus('Connecting to secure sign-in…');
       const response = await fetch('/api/clerk-config', {headers:{Accept:'application/json'}, cache:'no-store'});
       const config = await response.json().catch(() => ({}));
       if (!response.ok || !config.publishableKey || !config.proxyUrl) {
-        throw new Error('Authentication is not configured yet. Add the Clerk publishable and secret keys to Vercel Production, then redeploy.');
+        throw new Error(config.error || 'Clerk is not configured. Check the publishable key, secret key, and proxy settings in Vercel.');
       }
 
       const proxyBase = config.proxyUrl.replace(/\/+$/, '');
@@ -82,7 +107,7 @@
           'data-clerk-proxy-url': config.proxyUrl
         })
       ]);
-      if (!window.Clerk) throw new Error('Clerk did not start. Check the configured publishable key.');
+      if (!window.Clerk) throw new Error('Clerk did not start. Check the configured publishable key and proxy URL.');
       clerk = new window.Clerk(config.publishableKey, {proxyUrl: config.proxyUrl});
       await clerk.load({proxyUrl: config.proxyUrl, ui:{ClerkUI:window.__internal_ClerkUICtor}});
       clerk.addListener?.(() => {
@@ -99,6 +124,9 @@
     });
     return loading;
   }
+
+  signInTab?.addEventListener('click', () => selectMode('signin'));
+  signUpTab?.addEventListener('click', () => selectMode('signup'));
 
   const observer = new MutationObserver(() => {
     if (dialog.open) initialize();

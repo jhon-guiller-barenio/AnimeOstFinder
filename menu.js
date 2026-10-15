@@ -85,6 +85,7 @@
   });
   document.getElementById('drawerAiChat')?.addEventListener('click', openChat);
   document.getElementById('supportLauncher')?.addEventListener('click', openChat);
+  document.getElementById('supportChatLink')?.addEventListener('click', openChat);
   document.getElementById('closeLogin')?.addEventListener('click', () => loginDialog?.close());
   document.getElementById('closeAiChat')?.addEventListener('click', () => chatDialog?.close());
 

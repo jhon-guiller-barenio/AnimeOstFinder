@@ -31,7 +31,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=17" />
   <link rel="stylesheet" href="menu.css?v=3" />
-  <link rel="stylesheet" href="auth.css?v=1" />
+  <link rel="stylesheet" href="auth.css?v=2" />
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
@@ -68,7 +68,7 @@
       <span class="drawer-section-label">YOUR ACCOUNT</span>
       <button class="drawer-link accent" id="drawerLogin" type="button"><span class="drawer-icon">♙</span>Log in <span class="drawer-arrow">›</span></button>
       <span class="drawer-section-label">HELP &amp; COMMUNITY</span>
-      <a class="drawer-link external" href="https://github.com/jhon-guiller-barenio/AnimeOstFinder/issues" target="_blank" rel="noopener noreferrer"><span class="drawer-icon">?</span>Customer support <span class="drawer-arrow">↗</span></a>
+      <button class="drawer-link external" id="supportChatLink" type="button"><span class="drawer-icon">?</span>Customer support <span class="drawer-arrow">›</span></button>
       <button class="drawer-link" id="drawerAiChat" type="button"><span class="drawer-icon">✧</span>AI chat <span class="drawer-arrow">›</span></button>
       <div class="drawer-divider"></div>
       <button class="drawer-link" id="drawerTheme" type="button"><span class="drawer-icon">☾</span>Switch appearance <span class="drawer-arrow">›</span></button>
@@ -145,7 +145,7 @@
     <button class="drawer-modal-close" id="closeLogin" type="button" aria-label="Close sign in">×</button>
     <div class="eyebrow">YOUR SAKURASOUND ACCOUNT</div>
     <div class="auth-intro"><h2 id="loginTitle">Welcome to SakuraSound</h2><p>Sign in or create an account to manage your SakuraSound profile.</p></div>
-    <p id="clerkAuthStatus" role="status" aria-live="polite">Connecting to secure sign-in…</p>
+    <div class="auth-mode-tabs" id="authModeTabs" role="tablist" aria-label="Account access"><button id="signInTab" type="button" role="tab" aria-selected="true">Sign in</button><button id="signUpTab" type="button" role="tab" aria-selected="false">Create account</button></div><p id="clerkAuthStatus" role="status" aria-live="polite">Connecting to secure sign-in…</p>
     <div id="clerkAuthMount"></div>
   </dialog>
   <button class="support-fab" id="supportLauncher" type="button" aria-label="Open SakuraSound AI and customer support">
@@ -155,7 +155,7 @@
     <button class="drawer-modal-close" id="closeAiChat" type="button" aria-label="Close AI chat">×</button>
     <div class="eyebrow">SAKURASOUND ASSISTANT</div>
     <h2 id="aiChatTitle">Ask about anime music</h2>
-    <p>Get song ideas or help using SakuraSound. For personal help, <a class="chat-support-link" href="https://github.com/jhon-guiller-barenio/AnimeOstFinder/issues" target="_blank" rel="noopener noreferrer">contact customer support ↗</a></p>
+    <p>Get song ideas, help with SakuraSound, or describe a customer support issue here. Do not send passwords or payment details.</p>
     <div class="drawer-chat-prompts" aria-label="Suggested questions">
       <button type="button" data-chat-prompt="Recommend an anime opening like Gurenge.">Recommend a song</button>
       <button type="button" data-chat-prompt="How do I find albums and artists on SakuraSound?">Find an album</button>
@@ -167,7 +167,7 @@
   </dialog>
   <dialog id="tipDialog" class="tip-dialog"><button class="close-player" id="closeTip" aria-label="Close tip dialog">×</button><div class="tip-icon">☕</div><div class="eyebrow">SUPPORT THE PROJECT</div><h2>Keep the music playing</h2><p>If SakuraSound has helped you discover a favorite, you can support its creator with a small tip.</p><a id="tipSupportLink" class="tip-support-link" href="#" aria-disabled="true">Buy me a coffee <span>↗</span></a><small class="tip-setup-note">Buy Me a Coffee page link will be connected here.</small></dialog>
   <script src="app.js?v=20"></script>
-  <script src="menu.js?v=3"></script>
-  <script src="auth.js?v=3"></script>
+  <script src="menu.js?v=4"></script>
+  <script src="auth.js?v=4"></script>
 </body>
 </html>

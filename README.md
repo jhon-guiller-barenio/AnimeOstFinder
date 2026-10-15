@@ -49,16 +49,16 @@ Google's default quota currently allows 100 `search.list` calls per day. SakuraS
 
 ### Enable AI chat
 
-The floating **Help & AI** button opens SakuraSound's built-in assistant. It can answer questions about finding anime themes and using the player. The **Customer support** link also opens the project's GitHub support page. Chat uses Vercel AI Gateway's currently free `inclusionai/ling-3.0-flash-sante-free` model; free model availability and rate limits can change.
+The floating **Help & AI** button opens SakuraSound's built-in assistant. It can answer questions about finding anime themes and using the player. The **Customer support** entry and the floating help button open the in-site AI support chat. Chat uses Vercel AI Gateway's currently free `inclusionai/ling-3.0-flash-sante-free` model; free model availability and rate limits can change.
 
 AI replies use Vercel AI Gateway from the server-side `/api/ai-chat` route. To enable them:
 
 1. In the Vercel Dashboard, open **AI Gateway** and create an API key.
 2. Open the SakuraSound project → **Settings → Environment Variables**.
-3. Add `AI_GATEWAY_API_KEY` for Production (and Preview if you want chat on preview deployments). Keep it server-side; do not expose it in browser code or commit it to GitHub.
+3. Set `AI_GATEWAY_API_KEY` for Production (and Preview if you want chat on preview deployments). The existing `AI_GATEWAY_KEY` name is also supported. Keep the key server-side; do not expose it in browser code or commit it to GitHub.
 4. Redeploy the project so the function receives the new variable. Vercel applies environment variable changes to new deployments.
 
-If the key is not configured or the AI provider is unavailable, the chat displays an error and the customer support link remains available. AI responses depend on the selected model and Vercel AI Gateway account configuration.
+If no key is configured or the AI provider is unavailable, the chat displays an error. The support entry opens the same AI chat, so configure an AI Gateway key for both song help and customer support. AI responses depend on the selected model and Vercel AI Gateway account configuration.
 
 ## Data providers and API routes
 
@@ -85,4 +85,4 @@ SakuraSound uses Clerk for sign-up, sign-in, and account profile management. Bec
 5. Push or redeploy the latest commit so Vercel builds the proxy route.
 6. In Clerk's **Domains** settings, set the Frontend API proxy URL to `https://sakurasound.vercel.app/__clerk`, then use Clerk's **Verify** action.
 
-The client reads the public publishable key and proxy URL from `/api/clerk-config`; the secret key is never sent to the browser. Once configured, the Log in button opens Clerk's secure sign-in/sign-up form, and signed-in users can manage their profile. Saved song favorites remain stored in the browser on that device; syncing them across devices requires a database integration.
+The client reads the public publishable key and proxy URL from `/api/clerk-config`; the secret key is never sent to the browser. Once configured, the Log in button opens the secure Clerk panel with separate **Sign in** and **Create account** options. Clerk stores account records in its own user database; view or manage them in the Clerk Dashboard under **Users**. Signed-in users can manage their profile in the same panel. Saved song favorites remain stored in the browser on that device; syncing them across devices requires a database integration.

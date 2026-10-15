@@ -4,6 +4,7 @@
   "description": "SakuraSound anime theme finder and music player",
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
-    "ffmpeg-static": "^5.2.0"
+    "ffmpeg-static": "^5.2.0",
+    "@neondatabase/serverless": "^1.1.0"
   }
 }

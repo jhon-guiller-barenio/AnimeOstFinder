@@ -13,6 +13,7 @@
   let loading;
   let selectedMode = 'signin';
   let mountedMode = '';
+  let lastAuthUserId = null;
 
   function setStatus(message, isError = false) {
     status.textContent = message;
@@ -109,8 +110,14 @@
       ]);
       if (!window.Clerk) throw new Error('Clerk did not start. Check the configured publishable key and proxy URL.');
       clerk = new window.Clerk(config.publishableKey, {proxyUrl: config.proxyUrl});
+      window.SakuraActivity?.setClerk(clerk);
       await clerk.load({proxyUrl: config.proxyUrl, ui:{ClerkUI:window.__internal_ClerkUICtor}});
+      lastAuthUserId = clerk.user?.id || null;
       clerk.addListener?.(() => {
+        const currentUserId = clerk.user?.id || null;
+        if (currentUserId && currentUserId !== lastAuthUserId) window.SakuraActivity?.track(selectedMode === 'signup' ? 'sign_up' : 'sign_in');
+        else if (!currentUserId && lastAuthUserId) window.SakuraActivity?.track('sign_out');
+        lastAuthUserId = currentUserId;
         updateAccountLabels();
         mountAccountPanel();
       });

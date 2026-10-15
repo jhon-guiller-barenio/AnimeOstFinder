@@ -73,7 +73,7 @@ You can alternatively set `SAKURASOUND_ADMIN_USER_ID` in Vercel to one Clerk use
 
 Activity events are stored in the Neon `sakurasound` database in `public.activity_events`. The client reports page views, searches, playback, favorites, downloads, and help/chat opens. Search text and chat messages are not stored. In Vercel → SakuraSound → **Settings → Environment Variables**, set:
 
-- `DATABASE_URL`: the Neon connection string for the `sakurasound` database using the `sakurasound_owner` role. Use the pooled connection string for serverless requests.
+- `DATABASE_URL`: the Neon connection string for the `sakurasound` database using the `sakurasound_app` role. Use the pooled connection string for serverless requests.
 - `CLERK_SECRET_KEY`: the existing server-side Clerk secret key (required to verify sessions and read admin metadata).
 - `CLERK_AUTHORIZED_PARTIES`: optional comma-separated allowed origins; defaults to `https://sakurasound.vercel.app`. Include your local development origin only for a development environment.
 

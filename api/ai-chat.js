@@ -64,7 +64,7 @@ module.exports = async function handler(req, res) {
     'Help people discover anime opening and ending songs, find albums and artists, use search suggestions, favorites, the player, and account features.',
     'Be concise, warm, and practical. Do not claim that a song or album is available unless the user can check it in the catalog.',
     'SakuraSound may offer short theme previews and eligible theme video downloads; direct users to official music services for full recordings.',
-    'For account, billing, privacy, or technical issues you cannot resolve, direct the user to the Customer support link in the chat panel.',
+    'For account, billing, privacy, or technical issues, give safe troubleshooting steps and be clear when owner follow-up is needed. Do not claim that a support ticket was created.',
     'Never ask users to send passwords, Clerk keys, or other secrets.'
   ].join(' ');
 

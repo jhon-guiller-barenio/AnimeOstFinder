@@ -109,6 +109,7 @@
       ]);
       if (!window.Clerk) throw new Error('Clerk did not start. Check the configured publishable key and proxy URL.');
       clerk = new window.Clerk(config.publishableKey, {proxyUrl: config.proxyUrl});
+      window.SakuraActivity?.setClerk(clerk);
       await clerk.load({proxyUrl: config.proxyUrl, ui:{ClerkUI:window.__internal_ClerkUICtor}});
       clerk.addListener?.(() => {
         updateAccountLabels();

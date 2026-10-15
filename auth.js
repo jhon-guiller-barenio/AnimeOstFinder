@@ -12,7 +12,7 @@
   let clerk;
   let loading;
   let selectedMode = 'signin';
-  let mountedMode = '';
+  let mountedMode = '';\n  let lastAuthUserId = null;
 
   function setStatus(message, isError = false) {
     status.textContent = message;

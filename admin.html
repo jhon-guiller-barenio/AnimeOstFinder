@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#fff8fa">
+  <title>SakuraSound Admin</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/sakurasound-mark.svg">
+  <link rel="stylesheet" href="/admin.css?v=1">
+</head>
+<body>
+  <header class="admin-topbar">
+    <a class="brand" href="/" aria-label="SakuraSound home"><img src="/assets/sakurasound-mark.svg" alt=""><span>Sakura<span>Sound</span></span></a>
+    <div class="top-actions"><span class="admin-badge">ADMIN CONSOLE</span><button id="signOut" type="button" hidden>Sign out</button></div>
+  </header>
+  <main class="admin-main">
+    <section class="page-heading">
+      <div><p class="eyebrow">SAKURASOUND / ADMIN</p><h1>Activity overview</h1><p>See how people use SakuraSound over the past two weeks.</p></div>
+      <button class="refresh" id="refresh" type="button" hidden>↻ <span>Refresh</span></button>
+    </section>
+    <section class="auth-card" id="authCard">
+      <div class="eyebrow">SECURE ADMIN ACCESS</div>
+      <h2 id="authTitle">Sign in to continue</h2>
+      <p id="authMessage">Use your SakuraSound Clerk account to open the dashboard.</p>
+      <div id="adminAuthMount"></div>
+    </section>
+    <section id="dashboard" hidden>
+      <div class="metrics">
+        <article><span>EVENTS · LAST 24 HOURS</span><strong id="events24">—</strong></article>
+        <article><span>ACTIVE USERS · LAST 24 HOURS</span><strong id="users24">—</strong></article>
+        <article><span>EVENTS · LAST 30 DAYS</span><strong id="events30">—</strong></article>
+        <article><span>ACTIVE USERS · LAST 30 DAYS</span><strong id="users30">—</strong></article>
+      </div>
+      <section class="panel trend-panel">
+        <div class="panel-heading"><div><h2>Daily activity</h2><p>Events and signed-in users</p></div><span class="live-dot">● Updated just now</span></div>
+        <div class="chart" id="dailyChart" aria-label="Daily activity chart"></div>
+      </section>
+      <div class="lower-grid">
+        <section class="panel"><div class="panel-heading"><div><h2>Popular pages</h2><p>Page views over the last 30 days</p></div></div><div id="popularPages" class="popular-pages"></div></section>
+        <section class="panel"><div class="panel-heading"><div><h2>Recent activity</h2><p>Latest 100 activity events</p></div></div><div id="recentEvents" class="table-wrap"></div></section>
+      </div>
+    </section>
+    <p class="page-status" id="pageStatus" role="status" aria-live="polite"></p>
+    <footer>Activity records store event type, page path, anonymous visitor ID, and Clerk user ID. Search text and chat messages are not collected.</footer>
+  </main>
+  <script src="/admin.js?v=1"></script>
+</body>
+</html>

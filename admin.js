@@ -125,7 +125,7 @@
       authCard.hidden=false;
       dashboard.hidden=true;
       authTitle.textContent=response.status===403?'Administrator role required':'Dashboard unavailable';
-      authMessage.textContent=payload.error || 'Unable to load the dashboard.';
+      authMessage.textContent=response.status===403?'In Clerk Dashboard, open your user and set public_metadata to {"role":"admin"}, or configure SAKURASOUND_ADMIN_USER_ID in Vercel.':(payload.error || 'Unable to load the dashboard.');
       setStatus(payload.error || 'Unable to load the dashboard.');
       return;
     }

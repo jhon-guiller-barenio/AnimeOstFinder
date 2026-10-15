@@ -9,3 +9,11 @@
 body.dark-mode #clerkAuthStatus{background:#382437;color:#f0b1ca}
 body.dark-mode #clerkAuthStatus.is-error{background:#402426;color:#ffc1c1}
 @media(max-width:500px){#loginDialog{padding:24px 18px;max-height:88vh}}
+
+.auth-mode-tabs{display:flex;gap:8px;padding:4px;margin:14px 0 8px;border:1px solid #f0e4e9;border-radius:12px;background:#fff8fa}
+.auth-mode-tabs[hidden]{display:none}
+.auth-mode-tabs button{flex:1;border:0;border-radius:8px;padding:10px 12px;background:transparent;color:#8a7987;font-size:12px;font-weight:700;cursor:pointer}
+.auth-mode-tabs button[aria-selected="true"]{background:#dc7596;color:#fff;box-shadow:0 4px 12px rgba(220,117,150,.2)}
+body.dark-mode .auth-mode-tabs{background:#241d27;border-color:#493545}
+body.dark-mode .auth-mode-tabs button{color:#c2afbd}
+body.dark-mode .auth-mode-tabs button[aria-selected="true"]{color:#fff}

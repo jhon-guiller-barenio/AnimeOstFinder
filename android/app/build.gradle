@@ -1,7 +1,7 @@
 plugins { id 'com.android.application' }
 android {
     namespace 'app.sakurasound.player'
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         applicationId 'app.sakurasound.player'
         minSdk 23

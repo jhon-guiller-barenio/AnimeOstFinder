@@ -13,6 +13,7 @@
   let loading;
   let selectedMode = 'signin';
   let mountedMode = '';
+  let mountedNode;
   let lastAuthUserId = null;
 
   function setStatus(message, isError = false) {
@@ -38,9 +39,12 @@
 
   function unmountCurrent() {
     if (!clerk || !mountedMode) return;
-    if (mountedMode === 'signin') clerk.unmountSignIn?.(mount);
-    if (mountedMode === 'signup') clerk.unmountSignUp?.(mount);
-    if (mountedMode === 'profile') clerk.unmountUserProfile?.(mount);
+    if (mountedMode === 'signin') clerk.unmountSignIn?.(mountedNode);
+    if (mountedMode === 'signup') clerk.unmountSignUp?.(mountedNode);
+    if (mountedMode === 'profile') clerk.unmountUserProfile?.(mountedNode);
+    // Leave the React root's children intact while Clerk finishes cleanup.
+    mountedNode?.remove();
+    mountedNode = null;
     mountedMode = '';
   }
 
@@ -49,10 +53,11 @@
     const mode = clerk.isSignedIn ? 'profile' : selectedMode;
     if (mountedMode === mode) return;
     unmountCurrent();
-    mount.replaceChildren();
-    if (mode === 'profile') clerk.mountUserProfile(mount);
-    else if (mode === 'signup') clerk.mountSignUp(mount);
-    else clerk.mountSignIn(mount);
+    mountedNode = document.createElement('div');
+    mount.appendChild(mountedNode);
+    if (mode === 'profile') clerk.mountUserProfile(mountedNode);
+    else if (mode === 'signup') clerk.mountSignUp(mountedNode);
+    else clerk.mountSignIn(mountedNode);
     mountedMode = mode;
     setStatus('');
     updateAccountLabels();

@@ -78,7 +78,7 @@
       if (!mounted) {clerk.mountSignIn(authMount);mounted=true;}
       return;
     }
-    if (mounted) {clerk.unmountSignIn?.(authMount);authMount.replaceChildren();mounted=false;}
+    if (mounted) {clerk.unmountSignIn?.(authMount);mounted=false;}
     authCard.hidden = true;
     loadDashboard().catch(() => { dashboard.hidden = true; setStatus("Unable to connect to the dashboard. Try refreshing."); });
   }

@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.INTERNET" />
+  <application android:label="SakuraSound" android:icon="@drawable/app_icon" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:allowBackup="false" android:supportsRtl="true">
+    <meta-data android:name="asset_statements" android:resource="@string/asset_statements" />
+    <activity android:name="com.google.androidbrowserhelper.trusted.LauncherActivity" android:exported="true">
+      <meta-data android:name="android.support.customtabs.trusted.DEFAULT_URL" android:value="https://sakurasound.vercel.app/?source=android#tracks" />
+      <meta-data android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR" android:resource="@color/sakura" />
+      <meta-data android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR" android:resource="@color/sakura" />
+      <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+    </activity>
+  </application>
+</manifest>

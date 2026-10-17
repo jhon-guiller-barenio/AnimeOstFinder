@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <link rel="icon" type="image/svg+xml" href="/assets/sakurasound-mark.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/app-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="SakuraSound" />
   <meta name="theme-color" content="#fff8fa" />
   <meta name="description" content="Discover anime opening and ending songs on SakuraSound. Search anime themes, explore soundtrack albums, save favorites, and play available music." />
   <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -56,6 +60,8 @@
     </div>
     <div class="drawer-intro"><strong>Your anime soundtrack space</strong><p>Find a theme, save the songs you love, and keep listening.</p></div>
     <nav class="drawer-nav" aria-label="SakuraSound menu">
+      <button class="drawer-link" id="installApp" type="button"><span class="drawer-icon">↓</span>Install app <span class="drawer-arrow">›</span></button>
+      <p id="installStatus" role="status" style="padding:0 16px;font-size:13px" hidden></p>
       <span class="drawer-section-label">DISCOVER</span>
       <a class="drawer-link" href="#discover"><span class="drawer-icon">⌕</span>Home <span class="drawer-arrow">›</span></a>
       <a class="drawer-link" href="#tracks"><span class="drawer-icon">♫</span>Explore OSTs <span class="drawer-arrow">›</span></a>
@@ -170,5 +176,6 @@
   <script src="app.js?v=20"></script>
   <script src="menu.js?v=4"></script>
   <script src="auth.js?v=4"></script>
+  <script src="/install.js"></script>
 </body>
 </html>

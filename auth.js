@@ -81,7 +81,7 @@
       script.crossOrigin = 'anonymous';
       Object.entries(attributes).forEach(([name, value]) => script.setAttribute(name, value));
       script.addEventListener('load', () => { script.dataset.loaded = 'true'; resolve(); }, {once:true});
-      script.addEventListener('error', () => reject(new Error('Could not load Clerk authentication.')), {once:true});
+      script.addEventListener('error', () => { script.remove(); reject(new Error('Could not load Clerk authentication. Please try again.')); }, {once:true});
       document.head.appendChild(script);
     });
   }
@@ -109,9 +109,10 @@
         })
       ]);
       if (!window.Clerk) throw new Error('Clerk did not start. Check the configured publishable key and proxy URL.');
-      clerk = new window.Clerk(config.publishableKey, {proxyUrl: config.proxyUrl});
+      const instance = new window.Clerk(config.publishableKey, {proxyUrl: config.proxyUrl});
+      await instance.load({proxyUrl: config.proxyUrl, ui:{ClerkUI:window.__internal_ClerkUICtor}});
+      clerk = instance;
       window.SakuraActivity?.setClerk(clerk);
-      await clerk.load({proxyUrl: config.proxyUrl, ui:{ClerkUI:window.__internal_ClerkUICtor}});
       lastAuthUserId = clerk.user?.id || null;
       clerk.addListener?.(() => {
         const currentUserId = clerk.user?.id || null;

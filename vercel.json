@@ -7,7 +7,7 @@
     },
     {
       "source": "/__clerk/:path*",
-      "destination": "/api/clerk-proxy/:path*"
+      "destination": "/api/clerk-proxy?__clerk_path=:path*"
     }
   ]
 }

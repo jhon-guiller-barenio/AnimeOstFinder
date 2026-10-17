@@ -30,7 +30,7 @@
       script.crossOrigin = 'anonymous';
       Object.entries(attributes).forEach(([key,value]) => script.setAttribute(key,value));
       script.addEventListener('load', () => {script.dataset.loaded='true';resolve();},{once:true});
-      script.addEventListener('error', reject, {once:true});
+      script.addEventListener('error', () => { script.remove(); reject(new Error('Could not load secure sign-in. Reload to try again.')); }, {once:true});
       document.head.appendChild(script);
     });
   }
@@ -51,8 +51,9 @@
         })
       ]);
       if (!window.Clerk) throw new Error('Clerk could not start. Check the configured publishable key and proxy URL.');
-      clerk = new window.Clerk(config.publishableKey,{proxyUrl:config.proxyUrl});
-      await clerk.load({proxyUrl:config.proxyUrl,ui:{ClerkUI:window.__internal_ClerkUICtor}});
+      const instance = new window.Clerk(config.publishableKey,{proxyUrl:config.proxyUrl});
+      await instance.load({proxyUrl:config.proxyUrl,ui:{ClerkUI:window.__internal_ClerkUICtor}});
+      clerk = instance;
       window.SakuraActivity?.setClerk(clerk);
       clerk.addListener?.(() => render());
       return clerk;
@@ -68,6 +69,8 @@
     if (!clerk) return;
     document.getElementById('signOut').hidden = !clerk.isSignedIn;
     if (!clerk.isSignedIn) {
+      ++requestId;
+      document.getElementById('refresh').hidden = true;
       authCard.hidden = false;
       dashboard.hidden = true;
       authTitle.textContent = 'Sign in to continue';
@@ -77,7 +80,7 @@
     }
     if (mounted) {clerk.unmountSignIn?.(authMount);authMount.replaceChildren();mounted=false;}
     authCard.hidden = true;
-    loadDashboard();
+    loadDashboard().catch(() => { dashboard.hidden = true; setStatus("Unable to connect to the dashboard. Try refreshing."); });
   }
 
   function displayChart(rows) {
@@ -116,7 +119,8 @@
   async function loadDashboard() {
     const current=++requestId;
     const token=await clerk?.session?.getToken?.();
-    if (!token) return;
+    if (current !== requestId || !clerk?.isSignedIn) return;
+    if (!token) { dashboard.hidden = true; setStatus('Your session has expired. Sign in again.'); return; }
     setStatus('Loading activity…',false);
     const response=await fetch('/api/admin/activity',{headers:{Authorization:'Bearer '+token,Accept:'application/json'},cache:'no-store'});
     const payload=await response.json().catch(()=>({}));
@@ -142,7 +146,7 @@
     setStatus('',false);
   }
 
-  document.getElementById('refresh').addEventListener('click',loadDashboard);
+  document.getElementById('refresh').addEventListener('click', () => loadDashboard().catch(() => setStatus('Unable to connect. Try again.')));
   document.getElementById('signOut').addEventListener('click',async()=>{
     await clerk?.signOut();
     location.reload();

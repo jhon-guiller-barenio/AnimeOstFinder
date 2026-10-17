@@ -119,7 +119,10 @@ module.exports = async function handler(req, res) {
     const {Readable} = require('node:stream');
     await pipeline(Readable.fromWeb(upstream.body), res);
   } catch (error) {
-    console.error('AI Gateway request failed:', error?.name || 'request_error');
+    console.error('AI Gateway request failed:', error?.name || 'request_error', error?.cause?.code || '');
+    if (!res.headersSent) {
+      res.setHeader('X-AI-Error-Code', String(error?.cause?.code || error?.name || 'request_error').replace(/[^a-zA-Z0-9_-]/g, '').slice(0,64));
+    }
     if (res.headersSent) { res.destroy(error); return; }
     if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
       return replyError(res, 504, 'The AI took too long to respond. Please try again.');

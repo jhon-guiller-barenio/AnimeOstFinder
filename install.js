@@ -11,7 +11,13 @@
   sync();
   matchMedia('(display-mode: standalone)').addEventListener?.('change', sync);
   window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); prompt = event; });
-  window.addEventListener('appinstalled', () => { prompt = null; button.hidden = true; status.hidden = true; });
+  window.addEventListener('appinstalled', () => {
+    prompt = null;
+    button.hidden = true;
+    const message = 'SakuraSound is installed. Look for its icon on your Home screen or in your app drawer.';
+    showDrawerStatus(message);
+    showGuide(message);
+  });
   const showGuide = message => {
     guide.textContent = message;
     guide.hidden = false;
@@ -27,7 +33,11 @@
       try {
         await prompt.prompt();
         const choice = await prompt.userChoice;
-        if (choice?.outcome !== 'accepted') explain('Installation was not completed. In Chrome, open ⋮ and choose Install app or Add to Home screen.');
+        if (choice?.outcome === 'accepted') {
+          explain('Chrome started installing SakuraSound. When it finishes, look for the app icon on your Home screen or in your app drawer.');
+        } else {
+          explain('Installation was not completed. In Chrome, open ⋮ and choose Install app or Add to Home screen.');
+        }
       } catch {
         explain('In Chrome, open ⋮ and choose Install app or Add to Home screen.');
       } finally {

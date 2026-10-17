@@ -109,7 +109,7 @@
         })
       ]);
       if (!window.Clerk) throw new Error('Clerk did not start. Check the configured publishable key and proxy URL.');
-      const instance = new window.Clerk(config.publishableKey, {proxyUrl: config.proxyUrl});
+      const instance = typeof window.Clerk === 'function' ? new window.Clerk(config.publishableKey, {proxyUrl: config.proxyUrl}) : window.Clerk;
       await instance.load({proxyUrl: config.proxyUrl, ui:{ClerkUI:window.__internal_ClerkUICtor}});
       clerk = instance;
       window.SakuraActivity?.setClerk(clerk);

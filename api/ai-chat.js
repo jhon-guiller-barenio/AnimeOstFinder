@@ -33,7 +33,10 @@ module.exports = async function handler(req, res) {
     return replyError(res, 405, 'Method not allowed.');
   }
 
-  const apiKey = process.env.VERCEL_OIDC_TOKEN || process.env.AI_GATEWAY_API_KEY?.trim() || process.env.AI_GATEWAY_KEY?.trim();
+  const apiKey = [process.env.VERCEL_OIDC_TOKEN, process.env.AI_GATEWAY_API_KEY, process.env.AI_GATEWAY_KEY]
+    .filter(value => typeof value === 'string')
+    .map(value => value.trim())
+    .find(value => value && /^[\\x21-\\x7E]+$/.test(value));
   if (!apiKey) {
     return replyError(res, 503, 'AI chat is not connected yet. Add AI_GATEWAY_API_KEY (or the existing AI_GATEWAY_KEY) to the SakuraSound project in Vercel, then redeploy.');
   }

@@ -1,0 +1,44 @@
+name: Build SakuraSound Android
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, codex/sakurasound-app]
+    paths: ['android/**', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['android/**', '.github/workflows/android.yml']
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build installable test APK
+        working-directory: android
+        run: gradle :app:assembleDebug --no-daemon
+      - name: Export website verification file
+        run: |
+          mkdir -p android-verification
+          keytool -exportcert -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android -file /tmp/sakura-cert.der
+          python3 - <<'PYTHON'
+          import hashlib, json
+          from pathlib import Path
+          fingerprint = ':'.join(f'{b:02X}' for b in hashlib.sha256(Path('/tmp/sakura-cert.der').read_bytes()).digest())
+          statements = [{'relation':['delegate_permission/common.handle_all_urls'],'target':{'namespace':'android_app','package_name':'app.sakurasound.player','sha256_cert_fingerprints':[fingerprint]}}]
+          Path('android-verification/assetlinks.json').write_text(json.dumps(statements, indent=2))
+          PYTHON
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SakuraSound-Android-test
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android-verification/assetlinks.json
+          retention-days: 30

@@ -17,25 +17,34 @@
     guide.hidden = false;
     guide.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
-  const installAndroid = async () => {
+  const showDrawerStatus = message => {
+    status.textContent = message;
+    status.hidden = false;
+  };
+  const installAndroid = async ({ inDrawer = false } = {}) => {
+    const explain = message => inDrawer ? showDrawerStatus(message) : showGuide(message);
     if (prompt) {
       try {
         await prompt.prompt();
-        await prompt.userChoice;
+        const choice = await prompt.userChoice;
+        if (choice?.outcome !== 'accepted') explain('Installation was not completed. In Chrome, open ⋮ and choose Install app or Add to Home screen.');
       } catch {
-        showGuide('In Chrome, open the ⋮ menu and choose Install app or Add to Home screen.');
+        explain('In Chrome, open ⋮ and choose Install app or Add to Home screen.');
       } finally {
         prompt = null;
       }
       return;
     }
-    showGuide('On Android, open SakuraSound in Chrome, tap ⋮, then choose Install app or Add to Home screen.');
+    explain('No install prompt opened. In Chrome, tap ⋮ → Install app (or Add to Home screen), then confirm Install.');
   };
-  const installApple = () => showGuide('On iPhone or iPad: open SakuraSound in Safari, tap Share (the square with an arrow), choose Add to Home Screen, then tap Add.');
+  const installApple = ({ inDrawer = false } = {}) => {
+    const message = 'On iPhone or iPad: open SakuraSound in Safari, tap Share (the square with an arrow), choose Add to Home Screen, then tap Add.';
+    if (inDrawer) showDrawerStatus(message);
+    else showGuide(message);
+  };
   button.addEventListener('click', () => {
-    if (isAppleMobile) installApple();
-    else installAndroid();
-    if (!status.hidden) status.hidden = true;
+    if (isAppleMobile) installApple({ inDrawer: true });
+    else installAndroid({ inDrawer: true });
   });
   androidButton.addEventListener('click', installAndroid);
   appleButton.addEventListener('click', installApple);

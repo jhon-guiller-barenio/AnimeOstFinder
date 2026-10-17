@@ -2,7 +2,7 @@ const requestBuckets = new Map();
 const WINDOW_MS = 60_000;
 const REQUESTS_PER_WINDOW = 12;
 const AI_ENDPOINT = 'https://ai-gateway.vercel.sh/v1/chat/completions';
-const DEFAULT_MODEL = 'inclusionai/ling-3.0-flash-sante-free';
+const DEFAULT_MODEL = 'nvidia/nemotron-3.5-lightning-free';
 
 function replyError(res, status, message) {
   res.setHeader('Cache-Control', 'no-store');
@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
     return replyError(res, 405, 'Method not allowed.');
   }
 
-  const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.AI_GATEWAY_KEY;
+  const apiKey = process.env.AI_GATEWAY_API_KEY?.trim() || process.env.AI_GATEWAY_KEY?.trim() || process.env.VERCEL_OIDC_TOKEN;
   if (!apiKey) {
     return replyError(res, 503, 'AI chat is not connected yet. Add AI_GATEWAY_API_KEY (or the existing AI_GATEWAY_KEY) to the SakuraSound project in Vercel, then redeploy.');
   }
@@ -77,11 +77,12 @@ module.exports = async function handler(req, res) {
         Accept: 'text/event-stream'
       },
       body: JSON.stringify({
-        model: DEFAULT_MODEL,
+        model: process.env.AI_GATEWAY_MODEL?.trim() || DEFAULT_MODEL,
         messages: [{role: 'system', content: prompt}, ...messages],
         stream: true,
         temperature: 0.6,
-        max_tokens: 320
+        max_tokens: 640,
+        reasoning: {effort: 'none'}
       }),
       signal: AbortSignal.timeout(25_000)
     });
@@ -89,8 +90,20 @@ module.exports = async function handler(req, res) {
     if (!upstream.ok) {
       const detail = await upstream.json().catch(() => ({}));
       console.error('AI Gateway request failed:', upstream.status, detail?.error?.code || 'request_error');
-      return replyError(res, upstream.status === 429 ? 503 : 502, 'AI chat is temporarily unavailable. Please try again shortly.');
+      const code = String(detail?.error?.code || detail?.error?.type || '');
+      if (upstream.status === 401) return replyError(res, 503, 'The AI connection needs an updated server credential. Please contact the site owner.');
+      if (upstream.status === 402 || code === 'customer_verification_required') {
+        return replyError(res, 503, 'The AI provider requires account or credit setup by the site owner.');
+      }
+      if (upstream.status === 429) {
+        res.setHeader('Retry-After', upstream.headers.get('retry-after') || '60');
+        return replyError(res, 429, 'The AI service is busy. Please wait a minute and try again.');
+      }
+      if (upstream.status === 404 || code === 'model_not_found') return replyError(res, 503, 'The configured AI model is unavailable. Please contact the site owner.');
+      return replyError(res, 502, 'AI chat is temporarily unavailable. Please try again shortly.');
     }
+
+    if (!upstream.body) return replyError(res, 502, 'The AI returned no response. Please try again.');
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
@@ -99,11 +112,12 @@ module.exports = async function handler(req, res) {
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders?.();
 
-    if (!upstream.body) return res.end();
+    const {pipeline} = require('node:stream/promises');
     const {Readable} = require('node:stream');
-    Readable.fromWeb(upstream.body).pipe(res);
+    await pipeline(Readable.fromWeb(upstream.body), res);
   } catch (error) {
     console.error('AI Gateway request failed:', error?.name || 'request_error');
+    if (res.headersSent) { res.destroy(error); return; }
     if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
       return replyError(res, 504, 'The AI took too long to respond. Please try again.');
     }

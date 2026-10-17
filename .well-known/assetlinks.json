@@ -7,7 +7,8 @@
       "namespace": "android_app",
       "package_name": "app.sakurasound.player",
       "sha256_cert_fingerprints": [
-        "C2:CA:85:1C:79:DD:E2:7B:E2:8C:3C:D1:55:AA:58:36:27:A4:70:CB:42:A6:72:26:A0:80:4E:33:6C:38:7E:B7"
+        "C2:CA:85:1C:79:DD:E2:7B:E2:8C:3C:D1:55:AA:58:36:27:A4:70:CB:42:A6:72:26:A0:80:4E:33:6C:38:7E:B7",
+        "A9:66:CE:06:0B:0D:52:24:E2:A3:93:7A:11:57:1F:51:74:76:C1:21:B6:11:10:12:C6:03:5D:88:7F:D4:47:23"
       ]
     }
   }

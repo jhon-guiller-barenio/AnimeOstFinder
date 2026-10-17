@@ -33,7 +33,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=17" />
+  <link rel="stylesheet" href="styles.css?v=18" />
   <link rel="stylesheet" href="menu.css?v=3" />
   <link rel="stylesheet" href="auth.css?v=2" />
   <script>
@@ -60,8 +60,8 @@
     </div>
     <div class="drawer-intro"><strong>Your anime soundtrack space</strong><p>Find a theme, save the songs you love, and keep listening.</p></div>
     <nav class="drawer-nav" aria-label="SakuraSound menu">
-      <button class="drawer-link" id="installApp" type="button"><span class="drawer-icon">↓</span>Install app <span class="drawer-arrow">›</span></button>
-      <p id="installStatus" role="status" style="padding:0 16px;font-size:13px" hidden></p>
+      <button class="drawer-link" id="installApp" type="button"><span class="drawer-icon">↓</span>Install on this device <span class="drawer-arrow">›</span></button>
+      <p id="installStatus" class="drawer-install-status" role="status" hidden></p>
       <span class="drawer-section-label">DISCOVER</span>
       <a class="drawer-link" href="#discover"><span class="drawer-icon">⌕</span>Home <span class="drawer-arrow">›</span></a>
       <a class="drawer-link" href="#tracks"><span class="drawer-icon">♫</span>Explore OSTs <span class="drawer-arrow">›</span></a>
@@ -124,6 +124,28 @@
       </div>
     </section>
 
+    <section class="install-section" id="install" aria-labelledby="installTitle">
+      <div class="install-heading">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> TAKE YOUR SOUNDTRACK WITH YOU</div>
+        <h2 id="installTitle">SakuraSound, <em>one tap away.</em></h2>
+        <p>Install it on your home screen for a clean, app-like listening experience. Your account, catalog, and player stay connected to the live site.</p>
+      </div>
+      <div class="install-options">
+        <article class="install-option">
+          <span class="install-platform-icon" aria-hidden="true">◉</span>
+          <div><h3>Android</h3><p>Open this site in Chrome, then tap Install app. If the prompt doesn’t appear, use the browser menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</p></div>
+          <button id="installAndroid" type="button">Install on Android <span>↓</span></button>
+        </article>
+        <article class="install-option">
+          <span class="install-platform-icon apple-icon" aria-hidden="true">iOS</span>
+          <div><h3>iPhone &amp; iPad</h3><p>Open SakuraSound in Safari, tap <b>Share</b>, choose <b>Add to Home Screen</b>, then tap <b>Add</b>.</p></div>
+          <button id="installApple" type="button">Show Apple steps <span>→</span></button>
+        </article>
+      </div>
+      <p class="install-guide" id="installGuide" role="status" aria-live="polite" hidden></p>
+      <p class="install-footnote">SakuraSound needs an internet connection to search and play music. iPhone and iPad users install it from Safari; no App Store download is needed.</p>
+    </section>
+
     <section class="catalog" id="tracks">
       <div class="section-head">
         <div><div class="eyebrow"><span class="eyebrow-dot"></span> THE SOUNDTRACK TO YOUR FAVORITE WORLDS</div><h2>Opening <em>themes</em></h2><p class="section-sub">A growing catalog of songs that make every first episode unforgettable.</p></div>
@@ -176,6 +198,6 @@
   <script src="app.js?v=20"></script>
   <script src="menu.js?v=4"></script>
   <script src="auth.js?v=5"></script>
-  <script src="/install.js"></script>
+  <script src="/install.js?v=2"></script>
 </body>
 </html>

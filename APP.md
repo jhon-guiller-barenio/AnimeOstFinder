@@ -1,7 +1,13 @@
 # SakuraSound apps
 
-## Install the web app
-Deploy this branch to the existing Vercel project. Open SakuraSound in Chrome or Edge, open the SakuraSound menu, and choose **Install app**. On iPhone use Safari → Share → Add to Home Screen. Search and music require internet; only a reconnect page is available offline. Existing login, favorites, APIs and playback stay on the live site.
+## Install SakuraSound on Android, iPhone, or iPad
+
+Open [SakuraSound](https://sakurasound.vercel.app/) on the device you want to use. The home-screen app stays connected to the live site, so accounts, favorites, search, and playback use the same website. Search and music need an internet connection; offline use shows a reconnect page.
+
+- **Android:** open SakuraSound in Chrome and choose **Install app** from the browser prompt or menu. The site also has an **Install on this device** menu item and a device setup section.
+- **iPhone and iPad:** open SakuraSound in Safari, tap **Share → Add to Home Screen → Add**. It launches from the Home Screen like an app; an App Store download is not required.
+
+The home-screen web app is the simplest installation for both platforms and updates with the website.
 
 ## Android APK
 The Android project uses Google's Android Browser Helper (Trusted Web Activity), keeping browser-based authentication and media support. A compatible browser such as Chrome must be installed. It opens the live production site, even when built from a preview branch.

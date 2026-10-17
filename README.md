@@ -18,6 +18,7 @@ Discover anime opening and ending themes, find their album artwork, and listen i
 - **Light and dark themes**, with Zero Two background artwork, subtle neon accents, and animated details.
 - **Tip Me panel** for creator support. Add a Buy Me a Coffee page URL to enable its support link.
 - **Responsive layout** for desktop and mobile screens.
+- **Installable app experience** on Android and Apple devices: use Chrome’s install prompt on Android, or Safari’s **Share → Add to Home Screen** on iPhone and iPad. Installed versions open SakuraSound from the home screen and use the same live catalog, account, and player.
 
 ## Run locally
 
@@ -28,6 +29,15 @@ npx vercel dev
 ```
 
 The catalog can also be viewed from a basic static server, but album artwork lookups and downloads require the Vercel API routes.
+
+## Install SakuraSound
+
+SakuraSound can be installed from its website on Android, iPhone, and iPad:
+
+- **Android:** open [sakurasound.vercel.app](https://sakurasound.vercel.app/) in Chrome and tap **Install app**. If no prompt appears, open Chrome’s **⋮** menu and select **Install app** or **Add to Home screen**.
+- **iPhone/iPad:** open the site in Safari, tap **Share → Add to Home Screen → Add**. It opens from the Home Screen like an app and stays connected to the live site; an App Store download is not required.
+
+An Android test APK can also be built from **GitHub → Actions → Build SakuraSound Android**. Download the `SakuraSound-Android-test` artifact from a successful run and install `app-debug.apk`. It is test-signed and is not a Google Play release. See [APP.md](APP.md) for details.
 
 ## Deploy to Vercel
 

@@ -90,6 +90,9 @@ module.exports = async function handler(req, res) {
     if (!upstream.ok) {
       const detail = await upstream.json().catch(() => ({}));
       console.error('AI Gateway request failed:', upstream.status, detail?.error?.code || 'request_error');
+      res.setHeader('X-AI-Upstream-Status', String(upstream.status));
+      const safeCode = String(detail?.error?.code || detail?.error?.type || '').slice(0, 64);
+      if (/^[a-zA-Z0-9_-]+$/.test(safeCode)) res.setHeader('X-AI-Error-Code', safeCode);
       const code = String(detail?.error?.code || detail?.error?.type || '');
       if (upstream.status === 401) return replyError(res, 503, 'The AI connection needs an updated server credential. Please contact the site owner.');
       if (upstream.status === 402 || code === 'customer_verification_required') {

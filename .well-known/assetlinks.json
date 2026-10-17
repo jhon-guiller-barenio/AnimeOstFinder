@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.sakurasound.player",
+      "sha256_cert_fingerprints": [
+        "C2:CA:85:1C:79:DD:E2:7B:E2:8C:3C:D1:55:AA:58:36:27:A4:70:CB:42:A6:72:26:A0:80:4E:33:6C:38:7E:B7"
+      ]
+    }
+  }
+]

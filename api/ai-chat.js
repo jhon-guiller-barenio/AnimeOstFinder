@@ -121,6 +121,14 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     console.error('AI Gateway request failed:', error?.name || 'request_error', error?.cause?.code || '');
     if (!res.headersSent) {
+      const message = String(error?.message || '');
+      const category = /ByteString|header|character/i.test(message) ? 'credential_format'
+        : /fetch.*function/i.test(message) ? 'fetch_runtime'
+        : /URL/i.test(message) ? 'endpoint_url'
+        : /fetch failed/i.test(message) ? 'network'
+        : /Readable|stream|locked|body/i.test(message) ? 'stream'
+        : 'request';
+      res.setHeader('X-AI-Error-Stage', category);
       res.setHeader('X-AI-Error-Code', String(error?.cause?.code || error?.name || 'request_error').replace(/[^a-zA-Z0-9_-]/g, '').slice(0,64));
     }
     if (res.headersSent) { res.destroy(error); return; }

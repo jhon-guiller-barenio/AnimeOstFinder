@@ -149,3 +149,12 @@ body.dark-mode .scroll-top{background:#211f23;border-color:#403b41;color:#d28ba0
 body.dark-mode .install-option p,body.dark-mode .install-heading>p,body.dark-mode .install-footnote{color:#b9aeb5}
 body.dark-mode .install-guide{background:#29262b;border-color:#403b41;color:#e2d4da}
 @media(prefers-reduced-motion:reduce){.zero-two-backdrop::before,.record,.orbit-one,.orbit-two,.art-one,.art-two,.floating-note,.mini-petal{animation:none!important}}
+/* Final art direction: remove template-like flourishes and keep the music art real. */
+.hero h1 em,.section-head h2 em,.bottom-banner h2 em,.install-heading h2 em{font-style:normal}
+.hero-art{height:360px}
+.orbit,.art-card,.floating-note,.mini-petal{display:none}
+.record{width:276px;height:276px;box-shadow:0 12px 28px #30242a17;transform:none}
+.record-center{width:96px;height:96px;background:#d8bbc4;color:#49373f}
+.record-center b{font-size:25px;color:#8f5267}
+.hero-bottom{color:#857c80}
+@media(max-width:650px){.hero-art{height:250px;margin-bottom:0;transform:none}.record{width:220px;height:220px}.record-center{width:78px;height:78px}}
